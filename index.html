@@ -316,6 +316,16 @@
 
           
             
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/01/16/mac软件安装管理/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2017/01/16/mac软件安装管理/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
           
 
           
@@ -339,17 +349,14 @@
 
       
         
-          
-            <h3 id="1-1-brew使用："><a href="#1-1-brew使用：" class="headerlink" title="1.1 brew使用："></a>1.1 brew使用：</h3><p>brew主要用来下载一些不带界面的命令行下的工具和第三方库来进行二次开发</p>
-<ul>
-<li>Homebrew的安装路径及文件夹<br>Homebrew将本地的/usr/local初始化为git的工作树，并将目录所有者变更为当前所操作的用户，以后的操作将不需要sudo。</li>
-</ul>
-<p>-bin          用于存放所安装程序的启动链接（相当于快捷方式）<br>-Cellar       所以brew安装的程序，都将以[程序名/版本号]存放于本目录下<br>-etc          brew安装程序的配置文件默认存放路径<br>-Library      Homebrew 系统自身文件夹<br>brew下载的软件的目录 ~/Library/Caches/Homebrew</p>
-<ul>
-<li>常用指令<br>brew update 更新brew<br>brew install XXX 安装xxx软件<br>brew upgrade xxx 更新xxx软件<br>brew cleanup  清理旧版本的包缓存<br>brew list -version 查看你安装过的包列表（包括版本号）<br>brew outdated  查看你的包是否需要更新<br>brew –cache 查看通过brew下载软件的源文件<h3 id="1-2-brew-cask使用"><a href="#1-2-brew-cask使用" class="headerlink" title="1.2 brew cask使用"></a>1.2 brew cask使用</h3>brew cask主要用来下载一些带界面的应用软件，下载好后会自动安装，并能在mac中直接运行使用<br>brew cask的目录为：/usr/local/Caskroom<br>brew cask search 列出所有可以被安装的软件<br>brew cask search drop 查找所有和drop相关的应用<br>brew cask info thunder 查看 迅雷 应用的信息<br>brew cask uninstall qq 卸载 QQ<br>brew cask install google-chrome 安装谷歌浏览器</li>
-</ul>
-
-          
+          <h3 id="brew使用："><a href="#brew使用：" class="headerlink" title="brew使用："></a>brew使用：</h3><p>brew主要用来下载一些不带界面的命令行下的工具和第三方库来进行二次开发<br>
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/01/16/mac软件安装管理/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -439,8 +446,40 @@
           </span>
 
           
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/工具/" itemprop="url" rel="index">
+                    <span itemprop="name">工具</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
 
           
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/01/16/常用工具软件安装/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2017/01/16/常用工具软件安装/" itemprop="commentCount"></span>
+                </a>
+              </span>
             
           
 
@@ -465,14 +504,14 @@
 
       
         
-          
-            <h2 id="1-安装nodejs"><a href="#1-安装nodejs" class="headerlink" title="1.安装nodejs"></a>1.安装nodejs</h2><p>在nodejs.org上下载mac版，直接点击安装，或者通过brew 安装<br>brew install node<br>若创建node快捷没有完成，执行brew link node<br>安装完成后，观察node -v       npm -v是否成功<br>使用npm安装相关模块<br>如：npm install -g gitbook-cli<br>      npm install -g gulp</p>
-<h2 id="2-安装python"><a href="#2-安装python" class="headerlink" title="2.安装python"></a>2.安装python</h2><h3 id="2-1安装python-setuptools"><a href="#2-1安装python-setuptools" class="headerlink" title="2.1安装python-setuptools"></a>2.1安装python-setuptools</h3><p>python提供了easy_install工具，只需要一条命令就可以安装合适的模块，easy_install是python-setuptools包里的一个命令，所以只要安装python-setuptools就可以了.<br>centos: sudo  yum install python-setuptools<br>ubuntu：sudo apt-get install python-setuptools<br>安装好之后就可以用 easy_install +模块名称 来安装模块了<br>1）安装一个包<br>easy_install package_name<br>easy_install package_name ==version<br>2) 升级一个包<br>easy_install -U package_name&gt;=version</p>
-<h3 id="2-2-安装pip"><a href="#2-2-安装pip" class="headerlink" title="2.2 安装pip"></a>2.2 安装pip</h3><p>pip是一个可以替代 easy_install 的安装和管理 python 软件包的工具,提供更好的提示信息，可以删除包<br>安装pip：sudo easy_install pip<br>更新pip：pip install –upgrade pip<br>1) 安装一个包<br>pip install<br>2) 升级一个包 (如果不提供version号，升级到最新版本）<br>pip install -U  package_name<br>3）删除一个包<br>pip uninstall package_name</p>
-<h3 id="3-安装python3"><a href="#3-安装python3" class="headerlink" title="3 安装python3"></a>3 安装python3</h3><p>同理pip3 进行安装<br>例如：pip3 install  package_name</p>
-<h3 id="4-linux上软件安装-rpm安装"><a href="#4-linux上软件安装-rpm安装" class="headerlink" title="4 linux上软件安装 rpm安装"></a>4 linux上软件安装 rpm安装</h3><p>rpm -e jdk卸载jdk<br>rpm -ivh jdk-1.8.0-x64.rpm 安装jdk</p>
-
-          
+          <p>常见的一些语言工具的安装方式<br>
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/01/16/常用工具软件安装/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -695,28 +734,37 @@
 
   
 
+  
+    
+  
 
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"shunyang"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
 
+  
+    
+    
+    <script src="/lib/ua-parser-js/dist/ua-parser.min.js?v=0.7.9"></script>
+    <script src="/js/src/hook-duoshuo.js"></script>
   
 
 
 
 
-	
 
 
 
 
-
-  
-
-
-
-
-
-  
-
-  
 
 
 
