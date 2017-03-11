@@ -1,0 +1,697 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="rpc," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="1.日志级别　　采用大家喜闻乐见的log4j作为该RPC服务框架首选的日志库. 其对日志的级别有如下几种:　　1). TRACE 最细粒度级别日志级别　　2). DEBUG 对调试应用程序有帮助的日志级别　　3). INFO 粗粒度级别突出强调应用程序的运行　　4). WARN 表明潜在错误的情形　　5). ERROR 明确发生错误, 但不影响系统继续运行　　6). FATAL 严重的错误, 会导">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Thrift RPC实战(六) Thrift RPC服务框架日志的优化">
+<meta property="og:url" content="http://yoursite.com/2017/01/21/Thrift RPC实战(六) Thrift RPC服务框架日志的优化/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1.日志级别　　采用大家喜闻乐见的log4j作为该RPC服务框架首选的日志库. 其对日志的级别有如下几种:　　1). TRACE 最细粒度级别日志级别　　2). DEBUG 对调试应用程序有帮助的日志级别　　3). INFO 粗粒度级别突出强调应用程序的运行　　4). WARN 表明潜在错误的情形　　5). ERROR 明确发生错误, 但不影响系统继续运行　　6). FATAL 严重的错误, 会导">
+<meta property="og:updated_time" content="2017-03-11T16:32:23.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Thrift RPC实战(六) Thrift RPC服务框架日志的优化">
+<meta name="twitter:description" content="1.日志级别　　采用大家喜闻乐见的log4j作为该RPC服务框架首选的日志库. 其对日志的级别有如下几种:　　1). TRACE 最细粒度级别日志级别　　2). DEBUG 对调试应用程序有帮助的日志级别　　3). INFO 粗粒度级别突出强调应用程序的运行　　4). WARN 表明潜在错误的情形　　5). ERROR 明确发生错误, 但不影响系统继续运行　　6). FATAL 严重的错误, 会导">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/01/21/Thrift RPC实战(六) Thrift RPC服务框架日志的优化/"/>
+
+
+
+
+
+  <title> Thrift RPC实战(六) Thrift RPC服务框架日志的优化 | Hexo </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">Hexo</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+    
+      <p class="site-subtitle"></p>
+    
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/01/21/Thrift RPC实战(六) Thrift RPC服务框架日志的优化/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="John Doe">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.gif">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="Hexo">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="Hexo" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                Thrift RPC实战(六) Thrift RPC服务框架日志的优化
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-01-21T22:00:22+08:00">
+                2017-01-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/thrift/" itemprop="url" rel="index">
+                    <span itemprop="name">thrift</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/01/21/Thrift RPC实战(六) Thrift RPC服务框架日志的优化/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2017/01/21/Thrift RPC实战(六) Thrift RPC服务框架日志的优化/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+
+          
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="1-日志级别"><a href="#1-日志级别" class="headerlink" title="1.日志级别"></a>1.日志级别</h2><p>　　采用大家喜闻乐见的log4j作为该RPC服务框架首选的日志库. 其对日志的级别有如下几种:　　1). TRACE 最细粒度级别日志级别　　2). DEBUG 对调试应用程序有帮助的日志级别　　3). INFO 粗粒度级别突出强调应用程序的运行　　4). WARN 表明潜在错误的情形　　5). ERROR 明确发生错误, 但不影响系统继续运行　　6). FATAL 严重的错误, 会导致应用工作不正常　　日志级别等级顺序如下: TRACE &lt; DEBUG &lt; INFO &lt; WARN &lt; ERROR &lt; FATAL　　而应用具体的输出取决于日志级别的设置(包含及以上才会输出), 往往项目该上线采用DEBUG级别(日志量大, 容易写满磁盘), 等系统稳定后采用INFO级别<br><a id="more"></a></p>
+<h2 id="2-RPC服务日志需求"><a href="#2-RPC服务日志需求" class="headerlink" title="2.RPC服务日志需求　　"></a>2.RPC服务日志需求　　</h2><p>上述的日志需求虽然能定位问题, 但往往存在如下问题:　　1). 很多日志只是简单了记录该点(代码行)运行过, 或是运行到该点的数据快照.　　2). 服务由多种模块(每个模块由有多个节点构成)组成, 之间的日志串联不起来.　　而好的日志设计, 必须能满足　　1). 以完整的一次RPC调用作为单位(不是某个执行点快照, 而是完整的RPC callback过程), 并输出完整的一行日志记录, 包括(时间点, 来源, 输入参数, 输出参数, 中间经历的子过程, 消耗时间).　　2). 引入logid, 作为多个模块之间串联的依据.</p>
+<p>##3 .RPC级别的日志解决方案　　<br>尝试如下navie的方式去实现<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div></pre></td><td class="code"><pre><div class="line">public String echo(String msg) &#123;</div><div class="line"></div><div class="line">　　StringBuilder sb = </div><div class="line">new</div><div class="line"> StringBuilder();</div><div class="line"></div><div class="line">　　</div><div class="line">// *) 记录输入参数</div><div class="line"></div><div class="line">　　sb.append(</div><div class="line">&quot;[request: &#123;msg: msg&#125;]&quot;</div><div class="line">);</div><div class="line"></div><div class="line">　　</div><div class="line">// *) 访问缓存服务</div><div class="line"></div><div class="line">　　sb.append(</div><div class="line">&quot;[action: access redis, consume 100ms]&quot;</div><div class="line">);</div><div class="line"></div><div class="line">　　</div><div class="line">// *). 访问后端数据库</div><div class="line"></div><div class="line">　　sb.append(</div><div class="line">&quot;[action: dao, consume 100ms]&quot;</div><div class="line">);</div><div class="line"></div><div class="line">　　</div><div class="line">// *). 记录返回结果</div><div class="line"></div><div class="line">　　sb.append(</div><div class="line">&quot;[response: &#123;msg&#125;]&quot;</div><div class="line">);  </div><div class="line"></div><div class="line">　　logger.info(sb.toString());  </div><div class="line"></div><div class="line">　　</div><div class="line">return</div><div class="line"> msg;</div><div class="line"></div><div class="line"> </div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>　　评注: 这边的echo函数代表了一个rpc服务调用接口, 且简化了各个组件的交互. 同时引入StringBuilder, 记录各个交互的过程和时间消耗, 最后统一由函数出口前使用logger进行日志的统一输入.　　但是这种方式弊端非常的明显:　　1. 假设该rpc服务的函数, 存在多个出口　　2. 函数存在嵌套调用, 需要嵌套子函数的过程信息　　如下面的代码片段, 可参考:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">public boolean verifySession() &#123;</div><div class="line">　　// ***********我要记录日志(*^__^*) ***************</div><div class="line">&#125;</div><div class="line"> </div><div class="line">public String echo(String msg) &#123;</div><div class="line"> </div><div class="line">　　StringBuilder sb = new StringBuilder();</div><div class="line"> </div><div class="line">　　// *) 调用子过程</div><div class="line">　　verifySession();</div><div class="line"> </div><div class="line">　　// *) 记录输入参数</div><div class="line">　　sb.append(&quot;[request: &#123;msg: msg&#125;]&quot;);</div><div class="line">　　// *) 访问缓存服务</div><div class="line">　　if ( KeyValueEngine Access Fail ) &#123;</div><div class="line">　　　　// *********日志记录在那里***********</div><div class="line">　　　　throw new Exception();</div><div class="line">　　&#125;</div><div class="line">　　sb.append(&quot;[action: access redis, consume 100ms]&quot;);</div><div class="line"> </div><div class="line">　　// *). 访问后端数据库</div><div class="line">　　if ( Database Access Fail ) &#123;</div><div class="line">　　　　// *********日志记录在那里***********</div><div class="line">　　　　throw new Exception();</div><div class="line">　　&#125;</div><div class="line">　　sb.append(&quot;[action: dao, consume 100ms]&quot;);</div><div class="line">　　// *). 记录返回结果</div><div class="line">　　sb.append(&quot;[response: &#123;msg&#125;]&quot;);</div><div class="line">　　logger.info(sb.toString());</div><div class="line">　　return msg;</div><div class="line"> </div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>　　评注: 子函数verifySession的调用, 需要把StringBuilder对象往里传, 才能记录相关的信息, 而多个异常出口, 需要把日志输入往里添加(这个繁琐且容易忘记). 这种方案只能说容易想到, 但不是最佳的方案.　　有一点不可否认, rpc调用始终在同一个线程中. 聪明的读者是否猜到了最佳的解决方案.　　对, 就是大杀器ThreadLocal,其能解决子函数调用的问题, 那多出口问题呢? 让rpc服务框架去处理, 其作为具体rpc调用的最外层.<br>　　采用动态代理类, 去拦截rpc的handler接口调用.<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line">public class LogProxyHandler&lt;T&gt; implements InvocationHandler &#123;</div><div class="line"> </div><div class="line">　　private T instance;</div><div class="line"> </div><div class="line">　　public LogProxyHandler(T instance) &#123;</div><div class="line">　　　　this.instance = instance;</div><div class="line">　　&#125;</div><div class="line"> </div><div class="line">　　public Object createProxy() &#123;</div><div class="line">　　　　return Proxy.newProxyInstance(instance.getClass().getClassLoader(),</div><div class="line">　　　　　　　　　　instance.getClass().getInterfaces(), this);</div><div class="line">　　&#125;</div><div class="line"> </div><div class="line">　　@Override</div><div class="line">　　public Object invoke(Object proxy, Method method, Object[] args)</div><div class="line">　　　　　　　　throws Throwable &#123;</div><div class="line">　　　　// *) 函数调用前, 拦截处理, 作ThreadLocal的初始化工作</div><div class="line">　　　　LoggerUtility.beforeInvoke();    // -----(1)</div><div class="line">　　　　try &#123;</div><div class="line">　　　　　　Object res = method.invoke(instance, args);</div><div class="line">　　　　　　// *) 函数成功返回后, 拦截处理, 进行日志的集中输出</div><div class="line">　　　　　　LoggerUtility.returnInvoke();  // -----(2)</div><div class="line">　　　　　　return res;</div><div class="line">　　　　&#125; catch (Throwable e) &#123;</div><div class="line">　　　　　　// *) 出现异常后, 拦截处理, 进行日志集中输入 // -----(3)</div><div class="line">　　　　　　LoggerUtility.throwableInvode(&quot;[result = exception: &#123;%s&#125;]&quot;, e.getMessage());</div><div class="line">　　　　　　throw e;</div><div class="line">　　　　&#125;</div><div class="line">　　&#125;</div><div class="line"> </div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>　　　　(1). 拦截点beforeInvoke用于ThreadLocal的初始话工作, 日志缓存的清空　　　　(2). 拦截点returnInvoke用于函数成功返回后, 进行日志集中输出　　　　(3). 拦截点throwableInvoke用于出现异常后, 进行日志的集中输出　　同时在rpc服务调用中, 才用LoggerUtility的noticeLog静态函数(简单缓存中间日志过程)代替之前的StringBuilder.append来记录中间子过程　　LoggerUtility的代码如下所示:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div></pre></td><td class="code"><pre><div class="line">public class LoggerUtility &#123;</div><div class="line"> </div><div class="line">　　private static final Logger rpcLogger = LoggerFactory.getLogger(&quot;rpc&quot;);</div><div class="line"> </div><div class="line">　　public static final ThreadLocal&lt;StringBuilder&gt; threadLocals = new ThreadLocal&lt;StringBuilder&gt;();</div><div class="line"> </div><div class="line">　　public static void beforeInvoke() &#123;</div><div class="line">　　　　StringBuilder sb = threadLocals.get();</div><div class="line">　　　　if ( sb == null ) &#123;</div><div class="line">　　　　　　sb = new StringBuilder();</div><div class="line">　　　　　　threadLocals.set(sb);</div><div class="line">　　　　&#125;</div><div class="line">　　　　sb.delete(0, sb.length());</div><div class="line">　　&#125;</div><div class="line"> </div><div class="line">　　public static void returnInvoke() &#123;</div><div class="line">　　　　StringBuilder sb = threadLocals.get();</div><div class="line">　　　　if ( sb != null ) &#123;</div><div class="line">　　　　　　rpcLogger.info(sb.toString());</div><div class="line">　　　　&#125;</div><div class="line">　　&#125;</div><div class="line"> </div><div class="line">　　public static void throwableInvode(String fmt, Object... args) &#123;</div><div class="line">　　　　StringBuilder sb = threadLocals.get();</div><div class="line">　　　　if ( sb != null ) &#123;</div><div class="line">　　　　　　rpcLogger.info(sb.toString() + &quot; &quot; + String.format(fmt, args));</div><div class="line">　　　　&#125;</div><div class="line">　　&#125;</div><div class="line"> </div><div class="line">　　public static void noticeLog(String fmt, Object... args) &#123;</div><div class="line">　　　　StringBuilder sb = threadLocals.get();</div><div class="line">　　　　if ( sb != null ) &#123;</div><div class="line">　　　　　　sb.append(String.format(fmt, args));</div><div class="line">　　　　&#125;</div><div class="line">　　&#125;</div><div class="line"> </div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>　　两者的结合完美的解决了上述RPC的日志问题, 是不是很赞.</p>
+<h2 id="Logid的日志解决方案"><a href="#Logid的日志解决方案" class="headerlink" title="Logid的日志解决方案　　"></a>Logid的日志解决方案　　</h2><p>Thrift框架本身是没有logid的概念的, 我们很难去改动thrift的rpc协议, 去添加它(比如大百度的做法是把logid作为rpc协议本身一部分). 这边的解决方案是基于约定. 我们采用如下约定, 所有的rpc请求参数都封装为一个具体Request对象, 所有的返回结构都封装为一个具体的Response对象, 而每个Request对象首个属性是logid. 　　比如如下的结构定义:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">struct EchoRequest &#123;</div><div class="line">　　1: required i64 logid = 1001,</div><div class="line">　　2: required string msg   </div><div class="line">&#125;</div><div class="line">struct EchoResponse &#123;</div><div class="line">　　1: required i32 status,</div><div class="line">　　2: optional string msg</div><div class="line">&#125;</div><div class="line"> </div><div class="line">service EchoService &#123;</div><div class="line">　　EchoResponse echo(1: EchoRequest req);</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>　　评注: Request结构中logid, 就是约定的需要加到rpc的请求结构里去的. 　　我一直觉得: 约定优于配置, 约定优于框架.<br>本文摘自：<a href="http://www.cnblogs.com/mumuxinfei/p/3876190.html" target="_blank" rel="external">http://www.cnblogs.com/mumuxinfei/p/3876190.html</a></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/rpc/" rel="tag"># rpc</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/01/20/Thrift RPC实战(五) Spring集成Thrift，实现服务端和客户端代理/" rel="next" title="Thrift RPC实战(五) Spring集成Thrift，实现服务端和客户端代理">
+                <i class="fa fa-chevron-left"></i> Thrift RPC实战(五) Spring集成Thrift，实现服务端和客户端代理
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/01/22/Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅/" rel="prev" title="Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅">
+                Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div class="ds-thread" data-thread-key="2017/01/21/Thrift RPC实战(六) Thrift RPC服务框架日志的优化/"
+           data-title="Thrift RPC实战(六) Thrift RPC服务框架日志的优化" data-url="http://yoursite.com/2017/01/21/Thrift RPC实战(六) Thrift RPC服务框架日志的优化/">
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="John Doe" />
+          <p class="site-author-name" itemprop="name">John Doe</p>
+          <p class="site-description motion-element" itemprop="description"></p>
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">10</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">分类</span>
+              
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-日志级别"><span class="nav-number">1.</span> <span class="nav-text">1.日志级别</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-RPC服务日志需求"><span class="nav-number">2.</span> <span class="nav-text">2.RPC服务日志需求　　</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Logid的日志解决方案"><span class="nav-number">3.</span> <span class="nav-text">Logid的日志解决方案　　</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">John Doe</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"shunyang"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+
+  
+    
+    
+    <script src="/lib/ua-parser-js/dist/ua-parser.min.js?v=0.7.9"></script>
+    <script src="/js/src/hook-duoshuo.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+</body>
+</html>

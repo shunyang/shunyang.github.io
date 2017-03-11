@@ -1,0 +1,729 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="rpc," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="1.基础架构:　　RPC服务往平台化的方向发展, 会屏蔽掉更多的服务细节(服务的IP地址集群, 集群的扩容和迁移), 只暴露服务接口. 这部分的演化, 使得server端和client端完全的解耦合. 两者的交互通过ConfigServer(MetaServer)的中介角色来搭线.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅">
+<meta property="og:url" content="http://yoursite.com/2017/01/22/Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1.基础架构:　　RPC服务往平台化的方向发展, 会屏蔽掉更多的服务细节(服务的IP地址集群, 集群的扩容和迁移), 只暴露服务接口. 这部分的演化, 使得server端和client端完全的解耦合. 两者的交互通过ConfigServer(MetaServer)的中介角色来搭线.">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/3408387-133d7a3619b4fa32.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/3408387-157c9e1ad50bcf16.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:updated_time" content="2017-03-11T16:32:25.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅">
+<meta name="twitter:description" content="1.基础架构:　　RPC服务往平台化的方向发展, 会屏蔽掉更多的服务细节(服务的IP地址集群, 集群的扩容和迁移), 只暴露服务接口. 这部分的演化, 使得server端和client端完全的解耦合. 两者的交互通过ConfigServer(MetaServer)的中介角色来搭线.">
+<meta name="twitter:image" content="http://upload-images.jianshu.io/upload_images/3408387-133d7a3619b4fa32.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/01/22/Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅/"/>
+
+
+
+
+
+  <title> Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅 | Hexo </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">Hexo</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+    
+      <p class="site-subtitle"></p>
+    
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/01/22/Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="John Doe">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.gif">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="Hexo">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="Hexo" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-01-22T22:00:22+08:00">
+                2017-01-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/thrift/" itemprop="url" rel="index">
+                    <span itemprop="name">thrift</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/01/22/Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2017/01/22/Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+
+          
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="1-基础架构"><a href="#1-基础架构" class="headerlink" title="1.基础架构:"></a>1.基础架构:</h2><p>　　RPC服务往平台化的方向发展, 会屏蔽掉更多的服务细节(服务的IP地址集群, 集群的扩容和迁移), 只暴露服务接口. 这部分的演化, 使得server端和client端完全的解耦合. 两者的交互通过ConfigServer(MetaServer)的中介角色来搭线.</p>
+<a id="more"></a>
+<p><img src="http://upload-images.jianshu.io/upload_images/3408387-133d7a3619b4fa32.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="Paste_Image.png"></p>
+<p>　　注: 该图源自dubbo的官网<br>　　这边借助Zookeeper来扮演该角色, server扮演发布者的角色, 而client扮演订阅者的角色.</p>
+<h2 id="2-Zookeeper基础"><a href="#2-Zookeeper基础" class="headerlink" title="2.Zookeeper基础:"></a>2.Zookeeper基础:</h2><p>　　Zookeeper是分布式应用协作服务. 它实现了paxos的一致性算法, 在命名管理/配置推送/数据同步/主从切换方面扮演重要的角色.<br>　　其数据组织类似文件系统的目录结构:<br>　　<br><img src="http://upload-images.jianshu.io/upload_images/3408387-157c9e1ad50bcf16.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="Paste_Image.png"></p>
+<p>　　每个节点被称为znode, 为znode节点依据其特性, 又可以分为如下类型:<br>　　1). PERSISTENT: 永久节点<br>　　2). EPHEMERAL: 临时节点, 会随session(client disconnect)的消失而消失<br>　　3). PERSISTENT_SEQUENTIAL: 永久节点, 其节点的名字编号是单调递增的<br>　　4). EPHEMERAL_SEQUENTIAL: 临时节点, 其节点的名字编号是单调递增的<br>　　注: 临时节点不能成为父节点<br>　　Watcher观察模式, client可以注册对节点的状态/内容变更的事件回调机制. 其Event事件的两类属性需要关注下:<br>　　1). KeeperState: Disconnected,SyncConnected,Expired<br>　　2). EventType: None,NodeCreated,NodeDeleted,NodeDataChanged,NodeChildrenChanged</p>
+<h2 id="3-RPC服务端"><a href="#3-RPC服务端" class="headerlink" title="3.RPC服务端:"></a>3.RPC服务端:</h2><p>　　作为具体业务服务的RPC服务发布方, 对其自身的服务描述由以下元素构成.<br>　　1). namespace: 命名空间，来区分不同应用<br>　　2). service: 服务接口, 采用发布方的类全名来表示<br>　　3). version: 版本号<br>　　借鉴了Maven的GAV坐标系, 三维坐标系更符合服务平台化的大环境.</p>
+<ul>
+<li><p>数据模型的设计<br>　　具体RPC服务的注册路径为: /rpc/{namespace}/{service}/{version}, 该路径上的节点都是永久节点<br>　　RPC服务集群节点的注册路径为: /rpc/{namespace}/{service}/{version}/{ip:port:weight}, 末尾的节点是临时节点</p>
+<h2 id="4-Thrift服务基于zookeeper实现发布订阅改造"><a href="#4-Thrift服务基于zookeeper实现发布订阅改造" class="headerlink" title="4.Thrift服务基于zookeeper实现发布订阅改造"></a>4.Thrift服务基于zookeeper实现发布订阅改造</h2><h3 id="4-1改造的功能点"><a href="#4-1改造的功能点" class="headerlink" title="4.1改造的功能点"></a>4.1改造的功能点</h3><p>对于Thrift服务化的改造，主要是客户端，可以从如下几个方面进行：</p>
+</li>
+<li><p>1.服务端的服务注册，客户端自动发现，无需手工修改配置，这里我们使用zookeeper，但由于zookeeper本身提供的客户端使用较为复杂，因此采用curator-recipes工具类进行处理服务的注册与发现。</p>
+</li>
+<li>2.客户端使用连接池对服务调用进行管理，提升性能，这里我们使用Apache Commons项目commons-pool，可以大大减少代码的复杂度。</li>
+<li>3.关于Failover/LoadBalance，由于zookeeper的watcher，当服务端不可用是及时通知客户端，并移除不可用的服务节点，而LoadBalance有很多算法，这里我们采用随机加权方式，也是常有的负载算法，至于其他的算法介绍参考:常见的负载均衡的基本算法。</li>
+<li>4.使thrift服务的注册和发现可以基于spring配置,可以提供很多的便利。</li>
+<li>5.其他的改造如：<br>1）通过动态代理实现client和server端的交互细节透明化，让用户只需通过服务方提供的接口进行访问<br>2）Thrift通过两种方式调用服务Client和Iface<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">// *) Client API 调用</div><div class="line">(EchoService.Client)client.echo(&quot;hello lilei&quot;);  ---(1)</div><div class="line">// *) Service 接口 调用</div><div class="line">(EchoService.Iface)service.echo(&quot;hello lilei&quot;);  ---(2)</div></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>Client API的方式, 不推荐, 我们推荐Service接口的方式(服务化)。</p>
+<h3 id="4-2实现相关的改造"><a href="#4-2实现相关的改造" class="headerlink" title="4.2实现相关的改造"></a>4.2实现相关的改造</h3><h4 id="4-2-1-pom-xml引入依赖jar包"><a href="#4-2-1-pom-xml引入依赖jar包" class="headerlink" title="4.2.1 pom.xml引入依赖jar包"></a>4.2.1 pom.xml引入依赖jar包</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line">&lt;dependencies&gt;</div><div class="line">    &lt;dependency&gt;</div><div class="line">        &lt;groupId&gt;org.apache.thrift&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;libthrift&lt;/artifactId&gt;</div><div class="line">        &lt;version&gt;0.9.3&lt;/version&gt;</div><div class="line">    &lt;/dependency&gt;</div><div class="line">    &lt;dependency&gt;</div><div class="line">        &lt;groupId&gt;commons-pool&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;commons-pool&lt;/artifactId&gt;</div><div class="line">        &lt;version&gt;1.6&lt;/version&gt;</div><div class="line">    &lt;/dependency&gt;</div><div class="line">    &lt;dependency&gt;</div><div class="line">        &lt;groupId&gt;org.springframework&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;spring-context&lt;/artifactId&gt;</div><div class="line">        &lt;version&gt;4.0.9.RELEASE&lt;/version&gt;</div><div class="line">    &lt;/dependency&gt;</div><div class="line"></div><div class="line">    &lt;dependency&gt;</div><div class="line">        &lt;groupId&gt;org.apache.zookeeper&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;zookeeper&lt;/artifactId&gt;</div><div class="line">        &lt;version&gt;3.4.6&lt;/version&gt;</div><div class="line">    &lt;/dependency&gt;</div><div class="line">    &lt;dependency&gt;</div><div class="line">        &lt;groupId&gt;org.apache.curator&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;curator-recipes&lt;/artifactId&gt;</div><div class="line">        &lt;version&gt;2.7.1&lt;/version&gt;</div><div class="line">    &lt;/dependency&gt;</div></pre></td></tr></table></figure>
+<h4 id="4-2-2-使用zookeeper管理服务节点配置"><a href="#4-2-2-使用zookeeper管理服务节点配置" class="headerlink" title="4.2.2 使用zookeeper管理服务节点配置"></a>4.2.2 使用zookeeper管理服务节点配置</h4><p>1)定义Zookeeper的客户端的管理</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div></pre></td><td class="code"><pre><div class="line">package com.yangyang.thrift.rpc.zookeeper;</div><div class="line"></div><div class="line">import org.apache.curator.framework.CuratorFramework;</div><div class="line">import org.apache.curator.framework.CuratorFrameworkFactory;</div><div class="line">import org.apache.curator.retry.ExponentialBackoffRetry;</div><div class="line">import org.springframework.beans.factory.FactoryBean;</div><div class="line"></div><div class="line">/**</div><div class="line"> * Created by chenshunyang on 2016/10/21.</div><div class="line"> * 获取zookeeper客户端链接</div><div class="line"> */</div><div class="line">public class ZookeeperFactory implements FactoryBean&lt;CuratorFramework&gt;&#123;</div><div class="line">    private String zkHosts;</div><div class="line">    // session超时</div><div class="line">    private int sessionTimeout = 30000;</div><div class="line">    private int connectionTimeout = 30000;</div><div class="line"></div><div class="line">    // 共享一个zk链接</div><div class="line">    private boolean singleton = true;</div><div class="line">    private CuratorFramework zkClient;</div><div class="line">    // 全局path前缀,常用来区分不同的应用</div><div class="line">    private String namespace;</div><div class="line"></div><div class="line">    private final static String ROOT = &quot;thrift&quot;;</div><div class="line">    //注意一定要实现属性的set方法,否则在spring bean注入的地方会拿不到值</div><div class="line">    public void setZkHosts(String zkHosts) &#123;</div><div class="line">        this.zkHosts = zkHosts;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setSessionTimeout(int sessionTimeout) &#123;</div><div class="line">        this.sessionTimeout = sessionTimeout;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setConnectionTimeout(int connectionTimeout) &#123;</div><div class="line">        this.connectionTimeout = connectionTimeout;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setSingleton(boolean singleton) &#123;</div><div class="line">        this.singleton = singleton;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setNamespace(String namespace) &#123;</div><div class="line">        this.namespace = namespace;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setZkClient(CuratorFramework zkClient) &#123;</div><div class="line">        this.zkClient = zkClient;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public CuratorFramework getObject() throws Exception &#123;</div><div class="line">        if (singleton)&#123;</div><div class="line">            if (zkClient == null)&#123;</div><div class="line">                zkClient = create();</div><div class="line">                zkClient.start();</div><div class="line">            &#125;</div><div class="line">            return zkClient;</div><div class="line">        &#125;</div><div class="line">        return  create();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    private CuratorFramework create() throws Exception &#123;</div><div class="line">        if (namespace == null || namespace == &quot;&quot;)&#123;</div><div class="line">            namespace = ROOT;</div><div class="line">        &#125;else &#123;</div><div class="line">            namespace = ROOT+&quot;/&quot;+namespace;</div><div class="line">        &#125;</div><div class="line">        return create(zkHosts, sessionTimeout, connectionTimeout, namespace);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public static CuratorFramework create(String zkHosts, int sessionTimeout, int connectionTimeout, String namespace) &#123;</div><div class="line">        return  CuratorFrameworkFactory.builder()</div><div class="line">                .connectString(zkHosts)</div><div class="line">                .sessionTimeoutMs(sessionTimeout)</div><div class="line">                .connectionTimeoutMs(connectionTimeout)</div><div class="line">                .canBeReadOnly(true)</div><div class="line">                .namespace(namespace)</div><div class="line">                .retryPolicy(new ExponentialBackoffRetry(1000,Integer.MAX_VALUE))</div><div class="line">                .defaultData(null)</div><div class="line">                .build();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public Class&lt;?&gt; getObjectType() &#123;</div><div class="line">        return CuratorFramework.class;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public boolean isSingleton() &#123;</div><div class="line">        return singleton;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void close() &#123;</div><div class="line">        if (zkClient != null) &#123;</div><div class="line">            zkClient.close();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>2).服务端注册服务<br>由于服务端配置需要获取本机的IP地址，因此定义IP获取接口<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">package com.yangyang.thrift.rpc.zookeeper;</div><div class="line"></div><div class="line">/**</div><div class="line"> * 解析thrift-server端IP地址，用于注册服务</div><div class="line"> * 1) 可以从一个物理机器或者虚机的特殊文件中解析</div><div class="line"> * 2) 可以获取指定网卡序号的Ip</div><div class="line"> * 3) 其他</div><div class="line"> * Created by chenshunyang on 2016/10/21.</div><div class="line"> */</div><div class="line">public interface ThriftServerIpResolve &#123;</div><div class="line">    String getServerIp() throws Exception;</div><div class="line"></div><div class="line">    void reset();</div><div class="line"></div><div class="line">    //当IP变更时,将会调用reset方法</div><div class="line">    static interface IpRestCalllBack&#123;</div><div class="line">        public void rest(String newIp);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>可以对该接口做不同的实现，下面我们基于网卡获取IP地址，也可以通过配置serverIp<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div></pre></td><td class="code"><pre><div class="line">package com.yangyang.thrift.rpc.zookeeper;</div><div class="line"></div><div class="line">import org.slf4j.Logger;</div><div class="line">import org.slf4j.LoggerFactory;</div><div class="line"></div><div class="line">import java.net.Inet6Address;</div><div class="line">import java.net.InetAddress;</div><div class="line">import java.net.NetworkInterface;</div><div class="line">import java.net.SocketException;</div><div class="line">import java.util.Enumeration;</div><div class="line"></div><div class="line">/**</div><div class="line"> * 基于网卡获取IP地址</div><div class="line"> * Created by chenshunyang on 2016/10/21.</div><div class="line"> */</div><div class="line">public class ThriftServerIpLocalNetworkResolve implements ThriftServerIpResolve&#123;</div><div class="line">    private Logger logger = LoggerFactory.getLogger(getClass());</div><div class="line"></div><div class="line">    //缓存</div><div class="line">    private String serverIp;</div><div class="line"></div><div class="line"></div><div class="line">    @Override</div><div class="line">    public String getServerIp() throws Exception &#123;</div><div class="line">        if (serverIp != null)&#123;</div><div class="line">            return serverIp;</div><div class="line">        &#125;</div><div class="line">    // 一个主机有多个网络接口</div><div class="line">        try &#123;</div><div class="line">            Enumeration&lt;NetworkInterface&gt; netInterfaces = NetworkInterface.getNetworkInterfaces();</div><div class="line">            while (netInterfaces.hasMoreElements()) &#123;</div><div class="line">                NetworkInterface netInterface = netInterfaces.nextElement();</div><div class="line">                // 每个网络接口,都会有多个&quot;网络地址&quot;,比如一定会有lookback地址,会有siteLocal地址等.以及IPV4或者IPV6 .</div><div class="line">                Enumeration&lt;InetAddress&gt; addresses = netInterface.getInetAddresses();</div><div class="line">                while (addresses.hasMoreElements()) &#123;</div><div class="line">                    InetAddress address = addresses.nextElement();</div><div class="line">                    if(address instanceof Inet6Address)&#123;</div><div class="line">                        continue;</div><div class="line">                    &#125;</div><div class="line">                    if (address.isSiteLocalAddress() &amp;&amp; !address.isLoopbackAddress()) &#123;</div><div class="line">                        serverIp = address.getHostAddress();</div><div class="line">                        logger.info(&quot;resolve server ip :&quot;+ serverIp);</div><div class="line">                        continue;</div><div class="line">                    &#125;</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">        &#125; catch (SocketException e) &#123;</div><div class="line">            e.printStackTrace();</div><div class="line">        &#125;</div><div class="line">        return serverIp;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public void reset() &#123;</div><div class="line">        serverIp = null;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>接下来我们定义发布服务接口，并实现将服务信息（服务接口、版本号，IP、port、weight）发布到zookeeper中。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">package com.yangyang.thrift.rpc.zookeeper;</div><div class="line"></div><div class="line">import java.net.InetSocketAddress;</div><div class="line">import java.util.List;</div><div class="line"></div><div class="line">/**</div><div class="line"> * 获取服务地址接口</div><div class="line"> * Created by chenshunyang on 2016/10/21.</div><div class="line"> */</div><div class="line">public interface ThriftServerAddressProvider &#123;</div><div class="line">    //获取服务名称</div><div class="line">    String getService();</div><div class="line"></div><div class="line">    /**</div><div class="line">     * 获取所有服务端地址</div><div class="line">     * @return</div><div class="line">     */</div><div class="line">    List&lt;InetSocketAddress&gt; findServerAddressList();</div><div class="line"></div><div class="line">    /**</div><div class="line">     * 选取一个合适的address,可以随机获取等&apos;</div><div class="line">     * 内部可以使用合适的算法.</div><div class="line">     * @return</div><div class="line">     */</div><div class="line">    InetSocketAddress selector();</div><div class="line"></div><div class="line">    void close();</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>实现：ThriftServerAddressRegisterZookeeper.java<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div></pre></td><td class="code"><pre><div class="line">package com.yangyang.thrift.rpc.zookeeper;</div><div class="line"></div><div class="line">import com.yangyang.thrift.rpc.ThriftException;</div><div class="line">import org.apache.curator.framework.CuratorFramework;</div><div class="line">import org.apache.curator.framework.imps.CuratorFrameworkState;</div><div class="line">import org.apache.zookeeper.CreateMode;</div><div class="line">import org.slf4j.Logger;</div><div class="line">import org.slf4j.LoggerFactory;</div><div class="line"></div><div class="line">/**</div><div class="line"> * 注册服务列表到Zookeeper</div><div class="line"> * Created by chenshunyang on 2016/10/21.</div><div class="line"> */</div><div class="line">public class ThriftServerAddressRegisterZookeeper implements ThriftServerAddressRegister&#123;</div><div class="line">    private Logger logger = LoggerFactory.getLogger(getClass());</div><div class="line"></div><div class="line">    private CuratorFramework zkClient;</div><div class="line"></div><div class="line">    public ThriftServerAddressRegisterZookeeper()&#123;&#125;</div><div class="line"></div><div class="line">    public ThriftServerAddressRegisterZookeeper(CuratorFramework zkClient)&#123;</div><div class="line">        this.zkClient = zkClient;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setZkClient(CuratorFramework zkClient) &#123;</div><div class="line">        this.zkClient = zkClient;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public void register(String service, String version, String address) &#123;</div><div class="line">        if(zkClient.getState() == CuratorFrameworkState.LATENT)&#123;</div><div class="line">            zkClient.start();</div><div class="line">        &#125;</div><div class="line">        if (version == null || version == &quot;&quot;)&#123;</div><div class="line">            version =&quot;1.0.0&quot;;</div><div class="line">        &#125;</div><div class="line">        //创建临时节点</div><div class="line">        try &#123;</div><div class="line">            zkClient.create()</div><div class="line">                    .creatingParentsIfNeeded()</div><div class="line">                    .withMode(CreateMode.EPHEMERAL)</div><div class="line">                    .forPath(&quot;/&quot;+service+&quot;/&quot;+version+&quot;/&quot;+address);</div><div class="line">        &#125; catch (Exception e) &#123;</div><div class="line">            logger.error(&quot;register service address to zookeeper exception:&#123;&#125;&quot;,e);</div><div class="line">            throw new ThriftException(&quot;register service address to zookeeper exception:&#123;&#125;&quot;, e);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void close()&#123;</div><div class="line">        zkClient.close();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>3).客户端发现服务<br>定义获取服务地址接口<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">package com.yangyang.thrift.rpc.zookeeper;</div><div class="line"></div><div class="line">/**</div><div class="line"> * 发布服务地址及端口到服务注册中心，这里是zookeeper服务器</div><div class="line"> * Created by chenshunyang on 2016/10/21.</div><div class="line"> */</div><div class="line">public interface ThriftServerAddressRegister &#123;</div><div class="line">    /**</div><div class="line">     * 发布服务接口</div><div class="line">     * @param service 服务接口名称，一个产品中不能重复</div><div class="line">     * @param version 服务接口的版本号，默认1.0.0</div><div class="line">     * @param address 服务发布的地址和端口</div><div class="line">     */</div><div class="line">    void register(String service, String version, String address);</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>基于zookeeper服务地址自动发现实现：ThriftServerAddressProviderZookeeper.java<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div><div class="line">136</div><div class="line">137</div><div class="line">138</div><div class="line">139</div><div class="line">140</div><div class="line">141</div><div class="line">142</div><div class="line">143</div><div class="line">144</div><div class="line">145</div><div class="line">146</div><div class="line">147</div><div class="line">148</div><div class="line">149</div><div class="line">150</div><div class="line">151</div><div class="line">152</div><div class="line">153</div><div class="line">154</div><div class="line">155</div><div class="line">156</div><div class="line">157</div><div class="line">158</div><div class="line">159</div><div class="line">160</div><div class="line">161</div><div class="line">162</div><div class="line">163</div><div class="line">164</div><div class="line">165</div><div class="line">166</div><div class="line">167</div><div class="line">168</div><div class="line">169</div><div class="line">170</div><div class="line">171</div><div class="line">172</div><div class="line">173</div><div class="line">174</div><div class="line">175</div><div class="line">176</div><div class="line">177</div><div class="line">178</div><div class="line">179</div><div class="line">180</div><div class="line">181</div><div class="line">182</div><div class="line">183</div><div class="line">184</div><div class="line">185</div><div class="line">186</div><div class="line">187</div><div class="line">188</div><div class="line">189</div><div class="line">190</div><div class="line">191</div><div class="line">192</div><div class="line">193</div><div class="line">194</div><div class="line">195</div><div class="line">196</div><div class="line">197</div><div class="line">198</div><div class="line">199</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">package com.yangyang.thrift.rpc.zookeeper;</div><div class="line"></div><div class="line">import org.apache.curator.framework.CuratorFramework;</div><div class="line">import org.apache.curator.framework.imps.CuratorFrameworkState;</div><div class="line">import org.apache.curator.framework.recipes.cache.ChildData;</div><div class="line">import org.apache.curator.framework.recipes.cache.PathChildrenCache;</div><div class="line">import org.apache.curator.framework.recipes.cache.PathChildrenCache.StartMode;</div><div class="line">import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;</div><div class="line">import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;</div><div class="line">import org.slf4j.Logger;</div><div class="line">import org.slf4j.LoggerFactory;</div><div class="line">import org.springframework.beans.factory.InitializingBean;</div><div class="line"></div><div class="line">import java.io.Closeable;</div><div class="line">import java.net.InetSocketAddress;</div><div class="line">import java.util.*;</div><div class="line">import java.util.concurrent.CountDownLatch;</div><div class="line"></div><div class="line">/**</div><div class="line"> * @author chenshunyang</div><div class="line"> * 使用zookeeper作为&quot;config&quot;中心,使用apache-curator方法库来简化zookeeper开发</div><div class="line"> */</div><div class="line">public class ThriftServerAddressProviderZookeeper implements ThriftServerAddressProvider, InitializingBean ,Closeable&#123;</div><div class="line"></div><div class="line">    private Logger logger = LoggerFactory.getLogger(getClass());</div><div class="line"></div><div class="line">    // 注册服务</div><div class="line">    private String service;</div><div class="line">    // 服务版本号</div><div class="line">    private String version = &quot;1.0.0&quot;;</div><div class="line">    //zk客户端</div><div class="line">    private CuratorFramework zkClient;</div><div class="line"></div><div class="line">    private CountDownLatch countDownLatch= new CountDownLatch(1);//避免 zk还没有连接上，就去调用服务</div><div class="line"></div><div class="line">    private PathChildrenCache cachedPath;</div><div class="line"></div><div class="line">    // 用来保存当前provider所接触过的地址记录，当zookeeper集群故障时,可以使用trace中地址,作为&quot;备份&quot;</div><div class="line">    private Set&lt;String&gt; trace = new HashSet&lt;String&gt;();</div><div class="line"></div><div class="line">    private final List&lt;InetSocketAddress&gt; container = new ArrayList&lt;InetSocketAddress&gt;();</div><div class="line"></div><div class="line">    private Queue&lt;InetSocketAddress&gt; inner = new LinkedList&lt;InetSocketAddress&gt;();</div><div class="line"></div><div class="line">    private Object lock = new Object();</div><div class="line"></div><div class="line">    // 默认权重</div><div class="line">    private static final Integer DEFAULT_WEIGHT = 1;</div><div class="line"></div><div class="line">    public void setService(String service) &#123;</div><div class="line">        this.service = service;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setVersion(String version) &#123;</div><div class="line">        this.version = version;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setZkClient(CuratorFramework zkClient) &#123;</div><div class="line">        this.zkClient = zkClient;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public ThriftServerAddressProviderZookeeper() &#123;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public ThriftServerAddressProviderZookeeper(CuratorFramework zkClient) &#123;</div><div class="line">        this.zkClient = zkClient;</div><div class="line">    &#125;</div><div class="line"></div><div class="line"></div><div class="line">    @Override</div><div class="line">    public void afterPropertiesSet() throws Exception &#123;</div><div class="line">        // 如果zk尚未启动,则启动</div><div class="line">        if (zkClient.getState() == CuratorFrameworkState.LATENT) &#123;</div><div class="line">            zkClient.start();</div><div class="line">        &#125;</div><div class="line">        buildPathChildrenCache(zkClient, getServicePath(), true);</div><div class="line">        cachedPath.start(StartMode.POST_INITIALIZED_EVENT);</div><div class="line">        countDownLatch.await();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    private String getServicePath()&#123;</div><div class="line">        return &quot;/&quot; + service + &quot;/&quot; + version;</div><div class="line">    &#125;</div><div class="line">    private void buildPathChildrenCache(final CuratorFramework client, String path, Boolean cacheData) throws Exception &#123;</div><div class="line">        cachedPath = new PathChildrenCache(client, path, cacheData);</div><div class="line">        cachedPath.getListenable().addListener(new PathChildrenCacheListener() &#123;</div><div class="line">            @Override</div><div class="line">            public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception &#123;</div><div class="line">                PathChildrenCacheEvent.Type eventType = event.getType();</div><div class="line">                switch (eventType) &#123;</div><div class="line">                    case CONNECTION_RECONNECTED:</div><div class="line">                        logger.info(&quot;Connection is reconection.&quot;);</div><div class="line">                        break;</div><div class="line">                    case CONNECTION_SUSPENDED:</div><div class="line">                        logger.info(&quot;Connection is suspended.&quot;);</div><div class="line">                        break;</div><div class="line">                    case CONNECTION_LOST:</div><div class="line">                        logger.warn(&quot;Connection error,waiting...&quot;);</div><div class="line">                        return;</div><div class="line">                    case INITIALIZED:</div><div class="line">                        // countDownLatch.countDown();</div><div class="line">                        logger.warn(&quot;Connection init ...&quot;);</div><div class="line">                    default:</div><div class="line">                        //</div><div class="line">                &#125;</div><div class="line">                // 任何节点的时机数据变动,都会rebuild,此处为一个&quot;简单的&quot;做法.</div><div class="line">                cachedPath.rebuild();</div><div class="line">                rebuild();</div><div class="line">                countDownLatch.countDown();</div><div class="line">            &#125;</div><div class="line"></div><div class="line">            protected void rebuild() throws Exception &#123;</div><div class="line">                List&lt;ChildData&gt; children = cachedPath.getCurrentData();</div><div class="line">                if (children == null || children.isEmpty()) &#123;</div><div class="line">                    // 有可能所有的thrift server都与zookeeper断开了链接</div><div class="line">                    // 但是,有可能,thrift client与thrift server之间的网络是良好的</div><div class="line">                    // 因此此处是否需要清空container,是需要多方面考虑的.</div><div class="line">                    container.clear();</div><div class="line">                    logger.error(&quot;thrift server-cluster error....&quot;);</div><div class="line">                    return;</div><div class="line">                &#125;</div><div class="line">                List&lt;InetSocketAddress&gt; current = new ArrayList&lt;InetSocketAddress&gt;();</div><div class="line">                String path = null;</div><div class="line">                for (ChildData data : children) &#123;</div><div class="line">                    path = data.getPath();</div><div class="line">                    logger.debug(&quot;get path:&quot;+path);</div><div class="line">                    path = path.substring(getServicePath().length()+1);</div><div class="line">                    logger.debug(&quot;get serviceAddress:&quot;+path);</div><div class="line">                    String address = new String(path.getBytes(), &quot;utf-8&quot;);</div><div class="line">                    current.addAll(transfer(address));</div><div class="line">                    trace.add(address);</div><div class="line">                &#125;</div><div class="line">                Collections.shuffle(current);</div><div class="line">                synchronized (lock) &#123;</div><div class="line">                    container.clear();</div><div class="line">                    container.addAll(current);</div><div class="line">                    inner.clear();</div><div class="line">                    inner.addAll(current);</div><div class="line"></div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">        &#125;);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    private List&lt;InetSocketAddress&gt; transfer(String address) &#123;</div><div class="line">        String[] hostname = address.split(&quot;:&quot;);</div><div class="line">        Integer weight = DEFAULT_WEIGHT;</div><div class="line">        if (hostname.length == 3) &#123;</div><div class="line">            weight = Integer.valueOf(hostname[2]);</div><div class="line">        &#125;</div><div class="line">        String ip = hostname[0];</div><div class="line">        Integer port = Integer.valueOf(hostname[1]);</div><div class="line">        List&lt;InetSocketAddress&gt; result = new ArrayList&lt;InetSocketAddress&gt;();</div><div class="line">        // 根据优先级，将ip：port添加多次到地址集中，然后随机取地址实现负载</div><div class="line">        for (int i = 0; i &lt; weight; i++) &#123;</div><div class="line">            result.add(new InetSocketAddress(ip, port));</div><div class="line">        &#125;</div><div class="line">        return result;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public List&lt;InetSocketAddress&gt; findServerAddressList() &#123;</div><div class="line">        return Collections.unmodifiableList(container);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public synchronized InetSocketAddress selector() &#123;</div><div class="line">        if (inner.isEmpty()) &#123;</div><div class="line">            if (!container.isEmpty()) &#123;</div><div class="line">                inner.addAll(container);</div><div class="line">            &#125; else if (!trace.isEmpty()) &#123;</div><div class="line">                synchronized (lock) &#123;</div><div class="line">                    for (String hostname : trace) &#123;</div><div class="line">                        container.addAll(transfer(hostname));</div><div class="line">                    &#125;</div><div class="line">                    Collections.shuffle(container);</div><div class="line">                    inner.addAll(container);</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">        return inner.poll();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public void close() &#123;</div><div class="line">        try &#123;</div><div class="line">            cachedPath.close();</div><div class="line">            zkClient.close();</div><div class="line">        &#125; catch (Exception e) &#123;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public String getService() &#123;</div><div class="line">        return service;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>对此接口还做了一种实现，通过配置获取服务地址，参考附件：FixedAddressProvider.java</p>
+<h3 id="4-3-服务端服务注册实现"><a href="#4-3-服务端服务注册实现" class="headerlink" title="4.3 服务端服务注册实现"></a>4.3 服务端服务注册实现</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div><div class="line">136</div><div class="line">137</div><div class="line">138</div><div class="line">139</div><div class="line">140</div><div class="line">141</div></pre></td><td class="code"><pre><div class="line">package com.yangyang.thrift.rpc;</div><div class="line"></div><div class="line">import com.yangyang.thrift.rpc.zookeeper.ThriftServerAddressRegister;</div><div class="line">import com.yangyang.thrift.rpc.zookeeper.ThriftServerIpLocalNetworkResolve;</div><div class="line">import com.yangyang.thrift.rpc.zookeeper.ThriftServerIpResolve;</div><div class="line">import org.apache.thrift.TProcessor;</div><div class="line">import org.apache.thrift.TProcessorFactory;</div><div class="line">import org.apache.thrift.protocol.TBinaryProtocol;</div><div class="line">import org.apache.thrift.server.TServer;</div><div class="line">import org.apache.thrift.server.TThreadedSelectorServer;</div><div class="line">import org.apache.thrift.transport.TFramedTransport;</div><div class="line">import org.apache.thrift.transport.TNonblockingServerSocket;</div><div class="line">import org.springframework.beans.factory.InitializingBean;</div><div class="line"></div><div class="line">import java.lang.instrument.IllegalClassFormatException;</div><div class="line">import java.lang.reflect.Constructor;</div><div class="line"></div><div class="line">/**</div><div class="line"> * 服务端注册服务工厂</div><div class="line"> * Created by chenshunyang on 2016/10/21.</div><div class="line"> */</div><div class="line">public class ThriftServiceServerFactory implements InitializingBean&#123;</div><div class="line"></div><div class="line">    // 服务注册本机端口</div><div class="line">    private Integer port = 8299;</div><div class="line">    // 优先级</div><div class="line">    private Integer weight = 1;// default</div><div class="line">    // 服务实现类</div><div class="line">    private Object service;// serice实现类</div><div class="line">    //服务版本号</div><div class="line">    private String version;</div><div class="line">    //服务注册</div><div class="line">    private ThriftServerAddressRegister thriftServerAddressRegister;</div><div class="line"></div><div class="line">    // 解析本机IP</div><div class="line">    private ThriftServerIpResolve thriftServerIpResolve;</div><div class="line"></div><div class="line">    private ServerThread serverThread;</div><div class="line"></div><div class="line">    public void setPort(Integer port) &#123;</div><div class="line">        this.port = port;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setWeight(Integer weight) &#123;</div><div class="line">        this.weight = weight;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setService(Object service) &#123;</div><div class="line">        this.service = service;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setVersion(String version) &#123;</div><div class="line">        this.version = version;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setThriftServerAddressRegister(ThriftServerAddressRegister thriftServerAddressRegister) &#123;</div><div class="line">        this.thriftServerAddressRegister = thriftServerAddressRegister;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public void afterPropertiesSet() throws Exception &#123;</div><div class="line">        if (thriftServerIpResolve == null)&#123;</div><div class="line">            thriftServerIpResolve = new ThriftServerIpLocalNetworkResolve();</div><div class="line">        &#125;</div><div class="line">        String serverIP = thriftServerIpResolve.getServerIp();</div><div class="line">        if (serverIP == null || serverIP.equals(&quot;&quot;))&#123;</div><div class="line">            throw new ThriftException(&quot;cant find server ip...&quot;);</div><div class="line">        &#125;</div><div class="line">        String hostname = serverIP + &quot;:&quot; + port + &quot;:&quot; + weight;</div><div class="line">        Class&lt;?&gt;  serviceClass = service.getClass();</div><div class="line">        // 获取实现类接口</div><div class="line">        Class&lt;?&gt;[] interfaces = serviceClass.getInterfaces();</div><div class="line">        if (interfaces.length == 0) &#123;</div><div class="line">            throw new IllegalClassFormatException(&quot;service-class should implements Iface&quot;);</div><div class="line">        &#125;</div><div class="line">        // reflect,load &quot;Processor&quot;;</div><div class="line">        TProcessor processor = null;</div><div class="line">        String serviceName = null;</div><div class="line">        for (Class&lt;?&gt; clazz : interfaces) &#123;</div><div class="line">            String cname = clazz.getSimpleName();</div><div class="line">            if (!cname.equals(&quot;Iface&quot;)) &#123;</div><div class="line">                continue;</div><div class="line">            &#125;</div><div class="line">            serviceName = clazz.getEnclosingClass().getName();</div><div class="line">            String pname = serviceName + &quot;$Processor&quot;;</div><div class="line">            try &#123;</div><div class="line">                ClassLoader classLoader = Thread.currentThread().getContextClassLoader();</div><div class="line">                Class&lt;?&gt; pclass = classLoader.loadClass(pname);</div><div class="line">                if (!TProcessor.class.isAssignableFrom(pclass)) &#123;</div><div class="line">                    continue;</div><div class="line">                &#125;</div><div class="line">                Constructor&lt;?&gt; constructor = pclass.getConstructor(clazz);</div><div class="line">                processor = (TProcessor) constructor.newInstance(service);</div><div class="line">                break;</div><div class="line">            &#125; catch (Exception e) &#123;</div><div class="line">                //</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">        if (processor == null) &#123;</div><div class="line">            throw new IllegalClassFormatException(&quot;service-class should implements Iface&quot;);</div><div class="line">        &#125;</div><div class="line">        //需要单独的线程,因为serve方法是阻塞的.</div><div class="line">        serverThread = new ServerThread(processor, port);</div><div class="line">        serverThread.start();</div><div class="line">        // 注册服务</div><div class="line">        if (thriftServerAddressRegister != null) &#123;</div><div class="line">            thriftServerAddressRegister.register(serviceName, version, hostname);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    class ServerThread extends Thread &#123;</div><div class="line">        private TServer server;</div><div class="line">        ServerThread(TProcessor processor, int port) throws Exception &#123;</div><div class="line">            TNonblockingServerSocket serverTransport = new TNonblockingServerSocket(port);</div><div class="line">            TThreadedSelectorServer.Args tArgs = new TThreadedSelectorServer.Args(serverTransport);</div><div class="line">            TProcessorFactory processorFactory = new TProcessorFactory(processor);</div><div class="line">            tArgs.processorFactory(processorFactory);</div><div class="line">            tArgs.transportFactory(new TFramedTransport.Factory());</div><div class="line">            tArgs.protocolFactory( new TBinaryProtocol.Factory(true, true));</div><div class="line">            server = new TThreadedSelectorServer(tArgs);</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        @Override</div><div class="line">        public void run()&#123;</div><div class="line">            try&#123;</div><div class="line">                //启动服务</div><div class="line">                server.serve();</div><div class="line">            &#125;catch(Exception e)&#123;</div><div class="line">                //</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        public void stopServer()&#123;</div><div class="line">            server.stop();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void close() &#123;</div><div class="line">        serverThread.stopServer();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="4-4-客户端获取服务代理及连接池实现"><a href="#4-4-客户端获取服务代理及连接池实现" class="headerlink" title="4.4 客户端获取服务代理及连接池实现"></a>4.4 客户端获取服务代理及连接池实现</h3><p>客户端连接池实现：ThriftClientPoolFactory.java<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div></pre></td><td class="code"><pre><div class="line">package com.yangyang.thrift.rpc;</div><div class="line"></div><div class="line">import com.yangyang.thrift.rpc.zookeeper.ThriftServerAddressProvider;</div><div class="line">import org.apache.commons.pool.BasePoolableObjectFactory;</div><div class="line">import org.apache.thrift.TServiceClient;</div><div class="line">import org.apache.thrift.TServiceClientFactory;</div><div class="line">import org.apache.thrift.protocol.TBinaryProtocol;</div><div class="line">import org.apache.thrift.protocol.TProtocol;</div><div class="line">import org.apache.thrift.transport.TFramedTransport;</div><div class="line">import org.apache.thrift.transport.TSocket;</div><div class="line">import org.apache.thrift.transport.TTransport;</div><div class="line">import org.slf4j.Logger;</div><div class="line">import org.slf4j.LoggerFactory;</div><div class="line"></div><div class="line">import java.net.InetSocketAddress;</div><div class="line"></div><div class="line">/**</div><div class="line"> * 连接池,thrift-client for spring</div><div class="line"> */</div><div class="line">public class ThriftClientPoolFactory extends BasePoolableObjectFactory&lt;TServiceClient&gt; &#123;</div><div class="line"></div><div class="line">    private Logger logger = LoggerFactory.getLogger(getClass());</div><div class="line"></div><div class="line">    private final ThriftServerAddressProvider serverAddressProvider;</div><div class="line">    private final TServiceClientFactory&lt;TServiceClient&gt; clientFactory;</div><div class="line">    private PoolOperationCallBack callback;</div><div class="line"></div><div class="line">    protected ThriftClientPoolFactory(ThriftServerAddressProvider addressProvider, TServiceClientFactory&lt;TServiceClient&gt; clientFactory) throws Exception &#123;</div><div class="line">        this.serverAddressProvider = addressProvider;</div><div class="line">        this.clientFactory = clientFactory;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    protected ThriftClientPoolFactory(ThriftServerAddressProvider addressProvider, TServiceClientFactory&lt;TServiceClient&gt; clientFactory,</div><div class="line">                                      PoolOperationCallBack callback) throws Exception &#123;</div><div class="line">        this.serverAddressProvider = addressProvider;</div><div class="line">        this.clientFactory = clientFactory;</div><div class="line">        this.callback = callback;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    static interface PoolOperationCallBack &#123;</div><div class="line">        // 销毁client之前执行</div><div class="line">        void destroy(TServiceClient client);</div><div class="line"></div><div class="line">        // 创建成功是执行</div><div class="line">        void make(TServiceClient client);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public void destroyObject(TServiceClient client) throws Exception &#123;</div><div class="line">        if (callback != null) &#123;</div><div class="line">            try &#123;</div><div class="line">                callback.destroy(client);</div><div class="line">            &#125; catch (Exception e) &#123;</div><div class="line">                logger.warn(&quot;destroyObject:&#123;&#125;&quot;, e);</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">        logger.info(&quot;destroyObject:&#123;&#125;&quot;, client);</div><div class="line">        TTransport pin = client.getInputProtocol().getTransport();</div><div class="line">        pin.close();</div><div class="line">        TTransport pout = client.getOutputProtocol().getTransport();</div><div class="line">        pout.close();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public void activateObject(TServiceClient client) throws Exception &#123;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public void passivateObject(TServiceClient client) throws Exception &#123;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public boolean validateObject(TServiceClient client) &#123;</div><div class="line">        TTransport pin = client.getInputProtocol().getTransport();</div><div class="line">        logger.info(&quot;validateObject input:&#123;&#125;&quot;, pin.isOpen());</div><div class="line">        TTransport pout = client.getOutputProtocol().getTransport();</div><div class="line">        logger.info(&quot;validateObject output:&#123;&#125;&quot;, pout.isOpen());</div><div class="line">        return pin.isOpen() &amp;&amp; pout.isOpen();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public TServiceClient makeObject() throws Exception &#123;</div><div class="line">        InetSocketAddress address = serverAddressProvider.selector();</div><div class="line">        if(address==null)&#123;</div><div class="line">            new ThriftException(&quot;No provider available for remote service&quot;);</div><div class="line">        &#125;</div><div class="line">        TSocket tsocket = new TSocket(address.getHostName(), address.getPort());</div><div class="line">        TTransport transport = new TFramedTransport(tsocket);</div><div class="line">        TProtocol protocol = new TBinaryProtocol(transport);</div><div class="line">        TServiceClient client = this.clientFactory.getClient(protocol);</div><div class="line">        transport.open();</div><div class="line">        if (callback != null) &#123;</div><div class="line">            try &#123;</div><div class="line">                callback.make(client);</div><div class="line">            &#125; catch (Exception e) &#123;</div><div class="line">                logger.warn(&quot;makeObject:&#123;&#125;&quot;, e);</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">        return client;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>客户端服务代理工厂实现：ThriftServiceClientProxyFactory.java<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div></pre></td><td class="code"><pre><div class="line">package com.yangyang.thrift.rpc;</div><div class="line"></div><div class="line">import com.yangyang.thrift.rpc.zookeeper.ThriftServerAddressProvider;</div><div class="line">import org.apache.commons.pool.impl.GenericObjectPool;</div><div class="line">import org.apache.thrift.TServiceClient;</div><div class="line">import org.apache.thrift.TServiceClientFactory;</div><div class="line">import org.slf4j.Logger;</div><div class="line">import org.slf4j.LoggerFactory;</div><div class="line">import org.springframework.beans.factory.FactoryBean;</div><div class="line">import org.springframework.beans.factory.InitializingBean;</div><div class="line"></div><div class="line">import java.io.Closeable;</div><div class="line">import java.lang.reflect.InvocationHandler;</div><div class="line">import java.lang.reflect.Proxy;</div><div class="line"></div><div class="line">/**</div><div class="line"> * 客户端代理工厂</div><div class="line"> */</div><div class="line">public class ThriftServiceClientProxyFactory implements FactoryBean, InitializingBean,Closeable &#123;</div><div class="line"></div><div class="line">    private Logger logger = LoggerFactory.getLogger(getClass());</div><div class="line"></div><div class="line">    private Integer maxActive = 32;// 最大活跃连接数</div><div class="line"></div><div class="line">    private Integer idleTime = 180000;// ms,default 3 min,链接空闲时间, -1,关闭空闲检测</div><div class="line">    private ThriftServerAddressProvider serverAddressProvider;</div><div class="line"></div><div class="line">    private Object proxyClient;</div><div class="line">    private Class&lt;?&gt; objectClass;</div><div class="line"></div><div class="line">    private GenericObjectPool&lt;TServiceClient&gt; pool;</div><div class="line"></div><div class="line">    private ThriftClientPoolFactory.PoolOperationCallBack callback = new ThriftClientPoolFactory.PoolOperationCallBack() &#123;</div><div class="line">        @Override</div><div class="line">        public void make(TServiceClient client) &#123;</div><div class="line">            logger.info(&quot;create&quot;);</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        @Override</div><div class="line">        public void destroy(TServiceClient client) &#123;</div><div class="line">            logger.info(&quot;destroy&quot;);</div><div class="line">        &#125;</div><div class="line">    &#125;;</div><div class="line"></div><div class="line">    public void setMaxActive(Integer maxActive) &#123;</div><div class="line">        this.maxActive = maxActive;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setIdleTime(Integer idleTime) &#123;</div><div class="line">        this.idleTime = idleTime;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setServerAddressProvider(ThriftServerAddressProvider serverAddressProvider) &#123;</div><div class="line">        this.serverAddressProvider = serverAddressProvider;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public void afterPropertiesSet() throws Exception &#123;</div><div class="line">        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();</div><div class="line">        // 加载Iface接口</div><div class="line">        objectClass = classLoader.loadClass(serverAddressProvider.getService() + &quot;$Iface&quot;);</div><div class="line">        // 加载Client.Factory类</div><div class="line">        Class&lt;TServiceClientFactory&lt;TServiceClient&gt;&gt; fi = (Class&lt;TServiceClientFactory&lt;TServiceClient&gt;&gt;) classLoader.loadClass(serverAddressProvider.getService() + &quot;$Client$Factory&quot;);</div><div class="line">        TServiceClientFactory&lt;TServiceClient&gt; clientFactory = fi.newInstance();</div><div class="line"></div><div class="line">        ThriftClientPoolFactory clientPool = new ThriftClientPoolFactory(serverAddressProvider, clientFactory, callback);</div><div class="line">        pool = new GenericObjectPool&lt;TServiceClient&gt;(clientPool, makePoolConfig());</div><div class="line"></div><div class="line">//        InvocationHandler handler = makeProxyHandler();//方式1</div><div class="line">        InvocationHandler handler = makeProxyHandler2();//方式2</div><div class="line">        proxyClient = Proxy.newProxyInstance(classLoader, new Class[] &#123; objectClass &#125;, handler);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    private InvocationHandler makeProxyHandler() throws Exception&#123;</div><div class="line">        ThriftServiceClient2Proxy handler = null;</div><div class="line">        TServiceClient client = pool.borrowObject();</div><div class="line">        try &#123;</div><div class="line">            handler = new ThriftServiceClient2Proxy(client);</div><div class="line">            pool.returnObject(client);</div><div class="line">        &#125;catch (Exception e)&#123;</div><div class="line">            pool.invalidateObject(client);</div><div class="line">            throw new ThriftException(&quot;获取代理对象失败&quot;);</div><div class="line">        &#125;</div><div class="line">        return handler;</div><div class="line">    &#125;</div><div class="line"></div><div class="line"></div><div class="line">    private InvocationHandler makeProxyHandler2() throws Exception&#123;</div><div class="line">        ThriftServiceClientProxy handler = new ThriftServiceClientProxy(pool);</div><div class="line">        return handler;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    private GenericObjectPool.Config  makePoolConfig() &#123;</div><div class="line">        GenericObjectPool.Config poolConfig = new GenericObjectPool.Config();</div><div class="line">        poolConfig.maxActive = maxActive;</div><div class="line">        poolConfig.maxIdle = 1;</div><div class="line">        poolConfig.minIdle = 0;</div><div class="line">        poolConfig.minEvictableIdleTimeMillis = idleTime;</div><div class="line">        poolConfig.timeBetweenEvictionRunsMillis = idleTime * 2L;</div><div class="line">        poolConfig.testOnBorrow=true;</div><div class="line">        poolConfig.testOnReturn=false;</div><div class="line">        poolConfig.testWhileIdle=false;</div><div class="line">        return poolConfig;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public Object getObject() throws Exception &#123;</div><div class="line">        return proxyClient;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public Class&lt;?&gt; getObjectType() &#123;</div><div class="line">        return objectClass;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public boolean isSingleton() &#123;</div><div class="line">        return true;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public void close() &#123;</div><div class="line">        if(pool!=null)&#123;</div><div class="line">            try &#123;</div><div class="line">                pool.close();</div><div class="line">            &#125; catch (Exception e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">        if (serverAddressProvider != null) &#123;</div><div class="line">            serverAddressProvider.close();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>下面我们看一下服务端和客户端的配置;<br>服务端spring-context-thrift-server.xml<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div></pre></td><td class="code"><pre><div class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</div><div class="line">&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;</div><div class="line">       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:context=&quot;http://www.springframework.org/schema/context&quot;</div><div class="line">       xmlns:aop=&quot;http://www.springframework.org/schema/aop&quot; xmlns:tx=&quot;http://www.springframework.org/schema/tx&quot;</div><div class="line">       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd</div><div class="line">            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd</div><div class="line">            http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd</div><div class="line">            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd&quot;</div><div class="line">       default-lazy-init=&quot;false&quot;&gt;</div><div class="line"></div><div class="line">    &lt;!-- zookeeper --&gt;</div><div class="line">    &lt;bean id=&quot;thriftZookeeper&quot; class=&quot;com.yangyang.thrift.rpc.zookeeper.ZookeeperFactory&quot;</div><div class="line">          destroy-method=&quot;close&quot;&gt;</div><div class="line">        &lt;property name=&quot;zkHosts&quot; value=&quot;127.0.0.1:2181&quot; /&gt;</div><div class="line">        &lt;property name=&quot;namespace&quot; value=&quot;com.yangyang.thrift.rpc.demo&quot; /&gt;</div><div class="line">        &lt;property name=&quot;connectionTimeout&quot; value=&quot;3000&quot; /&gt;</div><div class="line">        &lt;property name=&quot;sessionTimeout&quot; value=&quot;3000&quot; /&gt;</div><div class="line">        &lt;property name=&quot;singleton&quot; value=&quot;true&quot; /&gt;</div><div class="line">    &lt;/bean&gt;</div><div class="line">    &lt;bean id=&quot;sericeAddressRegister&quot; class=&quot;com.yangyang.thrift.rpc.zookeeper.ThriftServerAddressRegisterZookeeper&quot;</div><div class="line">          destroy-method=&quot;close&quot;&gt;</div><div class="line">        &lt;property name=&quot;zkClient&quot; ref=&quot;thriftZookeeper&quot; /&gt;</div><div class="line">    &lt;/bean&gt;</div><div class="line">    &lt;bean id=&quot;echoSerivceImpl&quot; class=&quot;com.yangyang.thrift.rpc.demo.EchoSerivceImpl&quot; /&gt;</div><div class="line"></div><div class="line">    &lt;bean id=&quot;echoSerivce&quot; class=&quot;com.yangyang.thrift.rpc.ThriftServiceServerFactory&quot; destroy-method=&quot;close&quot;&gt;</div><div class="line">        &lt;property name=&quot;service&quot; ref=&quot;echoSerivceImpl&quot; /&gt;</div><div class="line">        &lt;property name=&quot;port&quot; value=&quot;9000&quot; /&gt;</div><div class="line">        &lt;property name=&quot;version&quot; value=&quot;1.0.0&quot; /&gt;</div><div class="line">        &lt;property name=&quot;weight&quot; value=&quot;1&quot; /&gt;</div><div class="line">        &lt;property name=&quot;thriftServerAddressRegister&quot; ref=&quot;sericeAddressRegister&quot; /&gt;</div><div class="line">    &lt;/bean&gt;</div><div class="line"></div><div class="line">    &lt;bean id=&quot;echoSerivce1&quot; class=&quot;com.yangyang.thrift.rpc.ThriftServiceServerFactory&quot; destroy-method=&quot;close&quot;&gt;</div><div class="line">        &lt;property name=&quot;service&quot; ref=&quot;echoSerivceImpl&quot; /&gt;</div><div class="line">        &lt;property name=&quot;port&quot; value=&quot;9001&quot; /&gt;</div><div class="line">        &lt;property name=&quot;version&quot; value=&quot;1.0.0&quot; /&gt;</div><div class="line">        &lt;property name=&quot;weight&quot; value=&quot;1&quot; /&gt;</div><div class="line">        &lt;property name=&quot;thriftServerAddressRegister&quot; ref=&quot;sericeAddressRegister&quot; /&gt;</div><div class="line">    &lt;/bean&gt;</div><div class="line"></div><div class="line">    &lt;bean id=&quot;echoSerivce2&quot; class=&quot;com.yangyang.thrift.rpc.ThriftServiceServerFactory&quot; destroy-method=&quot;close&quot;&gt;</div><div class="line">        &lt;property name=&quot;service&quot; ref=&quot;echoSerivceImpl&quot; /&gt;</div><div class="line">        &lt;property name=&quot;port&quot; value=&quot;9002&quot; /&gt;</div><div class="line">        &lt;property name=&quot;version&quot; value=&quot;1.0.0&quot; /&gt;</div><div class="line">        &lt;property name=&quot;weight&quot; value=&quot;1&quot; /&gt;</div><div class="line">        &lt;property name=&quot;thriftServerAddressRegister&quot; ref=&quot;sericeAddressRegister&quot; /&gt;</div><div class="line">    &lt;/bean&gt;</div><div class="line">&lt;/beans&gt;</div></pre></td></tr></table></figure></p>
+<p>客户端：spring-context-thrift-client.xml<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div></pre></td><td class="code"><pre><div class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</div><div class="line">&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;</div><div class="line">       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:context=&quot;http://www.springframework.org/schema/context&quot;</div><div class="line">       xmlns:aop=&quot;http://www.springframework.org/schema/aop&quot; xmlns:tx=&quot;http://www.springframework.org/schema/tx&quot;</div><div class="line">       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd</div><div class="line">            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd</div><div class="line">            http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd</div><div class="line">            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd&quot;</div><div class="line">       default-lazy-init=&quot;false&quot;&gt;</div><div class="line"></div><div class="line">    &lt;!-- fixedAddress --&gt;</div><div class="line">    &lt;!--</div><div class="line">    &lt;bean id=&quot;fixedAddressProvider&quot; class=&quot;com.yangyang.thrift.rpc.zookeeper.FixedAddressProvider&quot;&gt;</div><div class="line">         &lt;property name=&quot;service&quot; value=&quot;com.yangyang.thrift.rpc.demo.EchoSerivce&quot; /&gt;</div><div class="line">         &lt;property name=&quot;serverAddress&quot; value=&quot;192.168.36.215:9001:1,192.168.36.215:9002:2,192.168.36.215:9003:3&quot; /&gt;</div><div class="line">    &lt;/bean&gt;</div><div class="line">    &lt;bean id=&quot;echoSerivce&quot; class=&quot;com.yangyang.thrift.rpc.ThriftServiceClientProxyFactory&quot;&gt;</div><div class="line">        &lt;property name=&quot;maxActive&quot; value=&quot;5&quot; /&gt;</div><div class="line">        &lt;property name=&quot;idleTime&quot; value=&quot;10000&quot; /&gt;</div><div class="line">        &lt;property name=&quot;serverAddressProvider&quot; ref=&quot;fixedAddressProvider&quot; /&gt;</div><div class="line">    &lt;/bean&gt;</div><div class="line">   --&gt;</div><div class="line">    &lt;!-- zookeeper   --&gt;</div><div class="line">    &lt;bean id=&quot;thriftZookeeper&quot; class=&quot;com.yangyang.thrift.rpc.zookeeper.ZookeeperFactory&quot;</div><div class="line">          destroy-method=&quot;close&quot;&gt;</div><div class="line">        &lt;property name=&quot;zkHosts&quot; value=&quot;127.0.0.1:2181&quot; /&gt;</div><div class="line">        &lt;property name=&quot;namespace&quot; value=&quot;com.yangyang.thrift.rpc.demo&quot; /&gt;</div><div class="line">        &lt;property name=&quot;connectionTimeout&quot; value=&quot;3000&quot; /&gt;</div><div class="line">        &lt;property name=&quot;sessionTimeout&quot; value=&quot;3000&quot; /&gt;</div><div class="line">        &lt;property name=&quot;singleton&quot; value=&quot;true&quot; /&gt;</div><div class="line">    &lt;/bean&gt;</div><div class="line">    &lt;bean id=&quot;echoSerivce&quot; class=&quot;com.yangyang.thrift.rpc.ThriftServiceClientProxyFactory&quot; destroy-method=&quot;close&quot;&gt;</div><div class="line">        &lt;property name=&quot;maxActive&quot; value=&quot;5&quot; /&gt;</div><div class="line">        &lt;property name=&quot;idleTime&quot; value=&quot;1800000&quot; /&gt;</div><div class="line">        &lt;property name=&quot;serverAddressProvider&quot;&gt;</div><div class="line">            &lt;bean class=&quot;com.yangyang.thrift.rpc.zookeeper.ThriftServerAddressProviderZookeeper&quot;&gt;</div><div class="line">                &lt;property name=&quot;service&quot; value=&quot;com.yangyang.thrift.rpc.demo.EchoSerivce&quot; /&gt;</div><div class="line">                &lt;property name=&quot;version&quot; value=&quot;1.0.0&quot; /&gt;</div><div class="line">                &lt;property name=&quot;zkClient&quot; ref=&quot;thriftZookeeper&quot; /&gt;</div><div class="line">            &lt;/bean&gt;</div><div class="line">        &lt;/property&gt;</div><div class="line">    &lt;/bean&gt;</div><div class="line">&lt;/beans&gt;</div></pre></td></tr></table></figure></p>
+<h3 id="4-5服务端启动类"><a href="#4-5服务端启动类" class="headerlink" title="4.5服务端启动类"></a>4.5服务端启动类</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">package com.yangyang.thrift.rpc.demo;</div><div class="line"></div><div class="line">import org.springframework.context.support.ClassPathXmlApplicationContext;</div><div class="line"></div><div class="line">//服务端启动</div><div class="line">public class Server &#123;</div><div class="line"></div><div class="line">   public static void main(String[] args) &#123;</div><div class="line">      try &#123;</div><div class="line">         new ClassPathXmlApplicationContext(&quot;classpath:spring-context-thrift-server.xml&quot;);</div><div class="line">      &#125; catch (Exception e) &#123;</div><div class="line">         e.printStackTrace();</div><div class="line">      &#125;</div><div class="line">      System.out.println(&quot;服务启动成功&quot;);</div><div class="line">   &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="4-6-客户端启动类"><a href="#4-6-客户端启动类" class="headerlink" title="4.6 客户端启动类"></a>4.6 客户端启动类</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div></pre></td><td class="code"><pre><div class="line">package com.yangyang.thrift.rpc.demo;</div><div class="line"></div><div class="line">import com.yangyang.thrift.rpc.ThriftServiceClientProxyFactory;</div><div class="line">import org.apache.thrift.protocol.TBinaryProtocol;</div><div class="line">import org.apache.thrift.protocol.TProtocol;</div><div class="line">import org.apache.thrift.transport.TFramedTransport;</div><div class="line">import org.apache.thrift.transport.TSocket;</div><div class="line">import org.apache.thrift.transport.TTransport;</div><div class="line">import org.springframework.context.ApplicationContext;</div><div class="line">import org.springframework.context.support.ClassPathXmlApplicationContext;</div><div class="line"></div><div class="line">import java.util.Map;</div><div class="line">import java.util.Map.Entry;</div><div class="line"></div><div class="line">//客户端调用</div><div class="line">@SuppressWarnings(&quot;resource&quot;)</div><div class="line">public class Client &#123;</div><div class="line">   public static void main(String[] args) &#123;</div><div class="line">      //simple();</div><div class="line">      spring();</div><div class="line">   &#125;</div><div class="line"></div><div class="line">   public static void spring() &#123;</div><div class="line">      try &#123;</div><div class="line">         final ApplicationContext context = new ClassPathXmlApplicationContext(&quot;spring-context-thrift-client.xml&quot;);</div><div class="line">         EchoSerivce.Iface echoSerivce = (EchoSerivce.Iface) context.getBean(&quot;echoSerivce&quot;);</div><div class="line">         System.out.println(echoSerivce.echo(&quot;hello--echo&quot;));</div><div class="line">         //关闭连接的钩子</div><div class="line">         Runtime.getRuntime().addShutdownHook(new Thread() &#123;</div><div class="line">                public void run() &#123;</div><div class="line">                   Map&lt;String,ThriftServiceClientProxyFactory&gt;</div><div class="line">                   clientMap = context.getBeansOfType(ThriftServiceClientProxyFactory.class);</div><div class="line">                   for(Entry&lt;String, ThriftServiceClientProxyFactory&gt; client : clientMap.entrySet())&#123;</div><div class="line">                      System.out.println(&quot;serviceName : &quot;+client.getKey() + &quot;,class obj: &quot;+client.getValue());</div><div class="line">                      client.getValue().close();</div><div class="line">                   &#125;</div><div class="line">                &#125;</div><div class="line">            &#125;);</div><div class="line">      &#125; catch (Exception e) &#123;</div><div class="line">         e.printStackTrace();</div><div class="line">      &#125;</div><div class="line">   &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>运行服务端后，我们可以看见zookeeper注册了多个服务地址。<br>详细demo地址：<br>码云：<a href="http://git.oschina.net/shunyang/thrift-all/tree/master/thrift-zookeeper-rpc" target="_blank" rel="external">http://git.oschina.net/shunyang/thrift-all/tree/master/thrift-zookeeper-rpc</a><br>github：<a href="https://github.com/shunyang/thrift-all/tree/master/thrift-zookeeper-rpc" target="_blank" rel="external">https://github.com/shunyang/thrift-all/tree/master/thrift-zookeeper-rpc</a><br>本文参考链接：<br><a href="http://blog.csdn.net/zhu_tianwei/article/details/44115667" target="_blank" rel="external">http://blog.csdn.net/zhu_tianwei/article/details/44115667</a></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/rpc/" rel="tag"># rpc</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/01/21/Thrift RPC实战(六) Thrift RPC服务框架日志的优化/" rel="next" title="Thrift RPC实战(六) Thrift RPC服务框架日志的优化">
+                <i class="fa fa-chevron-left"></i> Thrift RPC实战(六) Thrift RPC服务框架日志的优化
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/01/23/Thrift RPC实战(八) 基于Zookeeper服务的RPC服务发布订阅架构拆分/" rel="prev" title="Thrift RPC实战(八) 基于Zookeeper服务的RPC服务发布订阅架构拆分">
+                Thrift RPC实战(八) 基于Zookeeper服务的RPC服务发布订阅架构拆分 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div class="ds-thread" data-thread-key="2017/01/22/Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅/"
+           data-title="Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅" data-url="http://yoursite.com/2017/01/22/Thrift RPC实战(七) 基于Zookeeper服务的RPC服务发布订阅/">
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="John Doe" />
+          <p class="site-author-name" itemprop="name">John Doe</p>
+          <p class="site-description motion-element" itemprop="description"></p>
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">10</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">分类</span>
+              
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-基础架构"><span class="nav-number">1.</span> <span class="nav-text">1.基础架构:</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Zookeeper基础"><span class="nav-number">2.</span> <span class="nav-text">2.Zookeeper基础:</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-RPC服务端"><span class="nav-number">3.</span> <span class="nav-text">3.RPC服务端:</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-Thrift服务基于zookeeper实现发布订阅改造"><span class="nav-number">4.</span> <span class="nav-text">4.Thrift服务基于zookeeper实现发布订阅改造</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1改造的功能点"><span class="nav-number">4.1.</span> <span class="nav-text">4.1改造的功能点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2实现相关的改造"><span class="nav-number">4.2.</span> <span class="nav-text">4.2实现相关的改造</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#4-2-1-pom-xml引入依赖jar包"><span class="nav-number">4.2.1.</span> <span class="nav-text">4.2.1 pom.xml引入依赖jar包</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-2-2-使用zookeeper管理服务节点配置"><span class="nav-number">4.2.2.</span> <span class="nav-text">4.2.2 使用zookeeper管理服务节点配置</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-服务端服务注册实现"><span class="nav-number">4.3.</span> <span class="nav-text">4.3 服务端服务注册实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-4-客户端获取服务代理及连接池实现"><span class="nav-number">4.4.</span> <span class="nav-text">4.4 客户端获取服务代理及连接池实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-5服务端启动类"><span class="nav-number">4.5.</span> <span class="nav-text">4.5服务端启动类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-6-客户端启动类"><span class="nav-number">4.6.</span> <span class="nav-text">4.6 客户端启动类</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">John Doe</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"shunyang"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+
+  
+    
+    
+    <script src="/lib/ua-parser-js/dist/ua-parser.min.js?v=0.7.9"></script>
+    <script src="/js/src/hook-duoshuo.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+</body>
+</html>

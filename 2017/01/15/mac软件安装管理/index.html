@@ -84,16 +84,16 @@
 
 
 
-<meta name="description" content="常见的一些语言工具的安装方式">
+<meta name="description" content="brew使用：brew主要用来下载一些不带界面的命令行下的工具和第三方库来进行二次开发">
 <meta property="og:type" content="article">
-<meta property="og:title" content="常用工具软件安装">
-<meta property="og:url" content="http://yoursite.com/2017/01/16/常用工具软件安装/index.html">
+<meta property="og:title" content="mac软件安装管理">
+<meta property="og:url" content="http://yoursite.com/2017/01/15/mac软件安装管理/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="常见的一些语言工具的安装方式">
-<meta property="og:updated_time" content="2017-01-16T14:55:40.000Z">
+<meta property="og:description" content="brew使用：brew主要用来下载一些不带界面的命令行下的工具和第三方库来进行二次开发">
+<meta property="og:updated_time" content="2017-03-11T16:33:12.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="常用工具软件安装">
-<meta name="twitter:description" content="常见的一些语言工具的安装方式">
+<meta name="twitter:title" content="mac软件安装管理">
+<meta name="twitter:description" content="brew使用：brew主要用来下载一些不带界面的命令行下的工具和第三方库来进行二次开发">
 
 
 
@@ -121,13 +121,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2017/01/16/常用工具软件安装/"/>
+  <link rel="canonical" href="http://yoursite.com/2017/01/15/mac软件安装管理/"/>
 
 
 
 
 
-  <title> 常用工具软件安装 | Hexo </title>
+  <title> mac软件安装管理 | Hexo </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -240,7 +240,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/01/16/常用工具软件安装/">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/01/15/mac软件安装管理/">
 
   <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
     <meta itemprop="name" content="John Doe">
@@ -264,7 +264,7 @@
             
             
               
-                常用工具软件安装
+                mac软件安装管理
               
             
           </h1>
@@ -279,8 +279,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-01-16T21:55:12+08:00">
-                2017-01-16
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-01-15T22:00:22+08:00">
+                2017-01-15
               </time>
             
 
@@ -320,8 +320,8 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2017/01/16/常用工具软件安装/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count ds-thread-count" data-thread-key="2017/01/16/常用工具软件安装/" itemprop="commentCount"></span>
+                <a href="/2017/01/15/mac软件安装管理/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2017/01/15/mac软件安装管理/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -347,12 +347,14 @@
       
 
       
-        <p>常见的一些语言工具的安装方式<br><a id="more"></a></p>
-<h2 id="安装nodejs"><a href="#安装nodejs" class="headerlink" title="安装nodejs"></a>安装nodejs</h2><p>在nodejs.org上下载mac版，直接点击安装，或者通过brew 安装<br>brew install node<br>若创建node快捷没有完成，执行brew link node<br>安装完成后，观察node -v       npm -v是否成功<br>使用npm安装相关模块<br>如：npm install -g gitbook-cli<br>      npm install -g gulp</p>
-<h2 id="安装python"><a href="#安装python" class="headerlink" title="安装python"></a>安装python</h2><h3 id="安装python-setuptools"><a href="#安装python-setuptools" class="headerlink" title="安装python-setuptools"></a>安装python-setuptools</h3><p>python提供了easy_install工具，只需要一条命令就可以安装合适的模块，easy_install是python-setuptools包里的一个命令，所以只要安装python-setuptools就可以了.<br>centos: sudo  yum install python-setuptools<br>ubuntu：sudo apt-get install python-setuptools<br>安装好之后就可以用 easy_install +模块名称 来安装模块了<br>1）安装一个包<br>easy_install package_name<br>easy_install package_name ==version<br>2) 升级一个包<br>easy_install -U package_name&gt;=version</p>
-<h3 id="安装pip"><a href="#安装pip" class="headerlink" title="安装pip"></a>安装pip</h3><p>pip是一个可以替代 easy_install 的安装和管理 python 软件包的工具,提供更好的提示信息，可以删除包<br>安装pip：sudo easy_install pip<br>更新pip：pip install –upgrade pip<br>1) 安装一个包<br>pip install<br>2) 升级一个包 (如果不提供version号，升级到最新版本）<br>pip install -U  package_name<br>3）删除一个包<br>pip uninstall package_name</p>
-<h2 id="安装python3"><a href="#安装python3" class="headerlink" title="安装python3"></a>安装python3</h2><p>同理pip3 进行安装<br>例如：pip3 install  package_name</p>
-<h2 id="linux上软件安装-rpm安装"><a href="#linux上软件安装-rpm安装" class="headerlink" title="linux上软件安装 rpm安装"></a>linux上软件安装 rpm安装</h2><p>rpm -e jdk卸载jdk<br>rpm -ivh jdk-1.8.0-x64.rpm 安装jdk</p>
+        <h3 id="brew使用："><a href="#brew使用：" class="headerlink" title="brew使用："></a>brew使用：</h3><p>brew主要用来下载一些不带界面的命令行下的工具和第三方库来进行二次开发<br><a id="more"></a></p>
+<ul>
+<li>Homebrew的安装路径及文件夹<br>Homebrew将本地的/usr/local初始化为git的工作树，并将目录所有者变更为当前所操作的用户，以后的操作将不需要sudo。</li>
+</ul>
+<p>-bin          用于存放所安装程序的启动链接（相当于快捷方式）<br>-Cellar       所以brew安装的程序，都将以[程序名/版本号]存放于本目录下<br>-etc          brew安装程序的配置文件默认存放路径<br>-Library      Homebrew 系统自身文件夹<br>brew下载的软件的目录 ~/Library/Caches/Homebrew</p>
+<ul>
+<li>常用指令<br>brew update 更新brew<br>brew install XXX 安装xxx软件<br>brew upgrade xxx 更新xxx软件<br>brew cleanup  清理旧版本的包缓存<br>brew list -version 查看你安装过的包列表（包括版本号）<br>brew outdated  查看你的包是否需要更新<br>brew –cache 查看通过brew下载软件的源文件<h3 id="brew-cask使用"><a href="#brew-cask使用" class="headerlink" title="brew cask使用"></a>brew cask使用</h3>brew cask主要用来下载一些带界面的应用软件，下载好后会自动安装，并能在mac中直接运行使用<br>brew cask的目录为：/usr/local/Caskroom<br>brew cask search 列出所有可以被安装的软件<br>brew cask search drop 查找所有和drop相关的应用<br>brew cask info thunder 查看 迅雷 应用的信息<br>brew cask uninstall qq 卸载 QQ<br>brew cask install google-chrome 安装谷歌浏览器</li>
+</ul>
 
       
     </div>
@@ -385,18 +387,14 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2017/01/15/mac软件安装管理/" rel="next" title="mac软件安装管理">
-                <i class="fa fa-chevron-left"></i> mac软件安装管理
-              </a>
-            
           </div>
 
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2017/01/16/Thrift RPC实战(一) 初次体检Thrift/" rel="prev" title="Thrift RPC实战(一) 初次体检Thrift">
-                Thrift RPC实战(一) 初次体检Thrift <i class="fa fa-chevron-right"></i>
+              <a href="/2017/01/16/常用工具软件安装/" rel="prev" title="常用工具软件安装">
+                常用工具软件安装 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -423,8 +421,8 @@
           
   <div class="comments" id="comments">
     
-      <div class="ds-thread" data-thread-key="2017/01/16/常用工具软件安装/"
-           data-title="常用工具软件安装" data-url="http://yoursite.com/2017/01/16/常用工具软件安装/">
+      <div class="ds-thread" data-thread-key="2017/01/15/mac软件安装管理/"
+           data-title="mac软件安装管理" data-url="http://yoursite.com/2017/01/15/mac软件安装管理/">
       </div>
     
   </div>
@@ -524,7 +522,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#安装nodejs"><span class="nav-number">1.</span> <span class="nav-text">安装nodejs</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装python"><span class="nav-number">2.</span> <span class="nav-text">安装python</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#安装python-setuptools"><span class="nav-number">2.1.</span> <span class="nav-text">安装python-setuptools</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#安装pip"><span class="nav-number">2.2.</span> <span class="nav-text">安装pip</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装python3"><span class="nav-number">3.</span> <span class="nav-text">安装python3</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux上软件安装-rpm安装"><span class="nav-number">4.</span> <span class="nav-text">linux上软件安装 rpm安装</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#brew使用："><span class="nav-number">1.</span> <span class="nav-text">brew使用：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#brew-cask使用"><span class="nav-number">2.</span> <span class="nav-text">brew cask使用</span></a></li></ol></div>
             
 
           </div>

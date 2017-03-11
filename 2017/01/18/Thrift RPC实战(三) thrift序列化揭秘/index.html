@@ -1,0 +1,703 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="rpc," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="本文主要讲解Thrift的序列化机制, 看看thrift作为数据交换格式是如何工作的?
+1.构造应用场景:1). 首先我们先来定义下thrift的简单结构.12345namespace java com.yangyang.thrift.apistruct Pair &amp;#123;    1: required string key    2: required string value&amp;#125;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Thrift RPC实战(三) thrift序列化揭秘">
+<meta property="og:url" content="http://yoursite.com/2017/01/18/Thrift RPC实战(三) thrift序列化揭秘/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="本文主要讲解Thrift的序列化机制, 看看thrift作为数据交换格式是如何工作的?
+1.构造应用场景:1). 首先我们先来定义下thrift的简单结构.12345namespace java com.yangyang.thrift.apistruct Pair &amp;#123;    1: required string key    2: required string value&amp;#125;">
+<meta property="og:updated_time" content="2017-03-11T16:31:53.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Thrift RPC实战(三) thrift序列化揭秘">
+<meta name="twitter:description" content="本文主要讲解Thrift的序列化机制, 看看thrift作为数据交换格式是如何工作的?
+1.构造应用场景:1). 首先我们先来定义下thrift的简单结构.12345namespace java com.yangyang.thrift.apistruct Pair &amp;#123;    1: required string key    2: required string value&amp;#125;">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/01/18/Thrift RPC实战(三) thrift序列化揭秘/"/>
+
+
+
+
+
+  <title> Thrift RPC实战(三) thrift序列化揭秘 | Hexo </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">Hexo</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+    
+      <p class="site-subtitle"></p>
+    
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/01/18/Thrift RPC实战(三) thrift序列化揭秘/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="John Doe">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.gif">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="Hexo">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="Hexo" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                Thrift RPC实战(三) thrift序列化揭秘
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-01-18T22:00:22+08:00">
+                2017-01-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/thrift/" itemprop="url" rel="index">
+                    <span itemprop="name">thrift</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/01/18/Thrift RPC实战(三) thrift序列化揭秘/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2017/01/18/Thrift RPC实战(三) thrift序列化揭秘/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+
+          
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>本文主要讲解Thrift的序列化机制, 看看thrift作为数据交换格式是如何工作的?</p>
+<h2 id="1-构造应用场景"><a href="#1-构造应用场景" class="headerlink" title="1.构造应用场景:"></a>1.构造应用场景:</h2><p>1). 首先我们先来定义下thrift的简单结构.<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">namespace java com.yangyang.thrift.api</div><div class="line">struct Pair &#123;</div><div class="line">    1: required string key</div><div class="line">    2: required string value</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<a id="more"></a>
+<p>required修饰符你肯定能猜测到它的意义, 但是你是否有没有这样的疑惑, “1”, “2” 这些数字标识符究竟有何含义? 它在序列化机制中究竟扮演什么样的角色?<br>编译并进行<br>thrift -gen java <your thrift="" file=""><br>2). 编写测试代码<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line">private static  String datafile = &quot;1.dat&quot;;</div><div class="line">// *) 把对象写入文件</div><div class="line">public static  void writeData() throws IOException, TException &#123;</div><div class="line">    Pair pair = new Pair();</div><div class="line">    pair.setKey(&quot;key1&quot;).setValue(&quot;value1&quot;);</div><div class="line">    FileOutputStream fos = new FileOutputStream(new File(datafile));</div><div class="line">    pair.write(new TBinaryProtocol(new TIOStreamTransport(fos)));</div><div class="line">    fos.close();</div><div class="line">&#125;</div><div class="line">// *) 从文件恢复对象</div><div class="line">public static  void readData() throws TException, IOException &#123;</div><div class="line">    FileInputStream fis = new FileInputStream(new File(datafile));</div><div class="line">    Pair pair = new Pair();</div><div class="line">    pair.read(new TBinaryProtocol(new TIOStreamTransport(fis)));</div><div class="line"></div><div class="line">    System.out.println(&quot;key =&gt; &quot; + pair.getKey());</div><div class="line">    System.out.println(&quot;value =&gt; &quot; + pair.getValue());</div><div class="line"></div><div class="line">    fis.close();</div><div class="line">&#125;</div><div class="line"></div><div class="line">public static void main(String[] args) throws Exception&#123;</div><div class="line">    //writeData();</div><div class="line">    readData();</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure></your></p>
+<p>调用writeData(), 把pair{key=&gt; key1, value=&gt; value1} 写入文件1.dat中<br>然后调用readData()，观察控制台结果为：<br>key =&gt;key1<br>value =&gt;value1<br>3). 如果我重新定义pair结构, 调整数字编号数序<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">namespace java com.yangyang.thrift.api</div><div class="line">struct Pair &#123;</div><div class="line">    2: required string key</div><div class="line">    1: required string value</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>评注: 这边2对应key, 1对应value.<br>重新编译thrift -gen java <your thrift="" file=""><br>4). 然后读取该数据<br>调用readData(), 注意此时不要在调用writeData(),从文件1.dat中恢复Pair对象来<br>结果:<br>key =&gt; value1<br>value =&gt; key1<br>是不是和你预期的相反, 看来属性名称并没有发挥作用, 而id标识在thrift的序列化/反序列化扮演非常重要的角色<br>带着这些疑惑, 我们进一步的详细解读序列化机制</your></p>
+<h2 id="2-thrift-数据格式描述"><a href="#2-thrift-数据格式描述" class="headerlink" title="2.thrift 数据格式描述"></a>2.thrift 数据格式描述</h2><p>官网文档描述: <a href="http://thrift.apache.org/static/files/thrift-20070401.pdf" target="_blank" rel="external">http://thrift.apache.org/static/files/thrift-20070401.pdf</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Versioning in Thrift is implemented via ﬁeld identiﬁers. The ﬁeld header for every member of a struct in Thrift is encoded with a unique ﬁeld identiﬁer. The combination of this ﬁeld identiﬁer and its type speciﬁer is used to uniquely identify the ﬁeld. The Thrift deﬁnition language supports automatic assignment of ﬁeld identiﬁers, but it is good programming practice to always explicitly specify ﬁeld identiﬁers.</div></pre></td></tr></table></figure></p>
+<p>翻译: thrift的向后兼容性(Version)借助属性标识(数字编号id + 属性类型type)来实现, 可以理解为在序列化后(属性数据存储由 field_name:field_value =&gt; id+type:field_value), 这也解释了上述提到的场景的原因了.<br>对之前定义的Pair结构体, 进行代码解读:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div></pre></td><td class="code"><pre><div class="line">public void read(org.apache.thrift.protocol.TProtocol iprot, Pair struct) throws org.apache.thrift.TException &#123;</div><div class="line">  org.apache.thrift.protocol.TField schemeField;</div><div class="line">  //读取结构开始标记</div><div class="line">  iprot.readStructBegin();</div><div class="line">  while (true)</div><div class="line">  &#123;</div><div class="line">    // 读取Field属性开始标记</div><div class="line">    schemeField = iprot.readFieldBegin();</div><div class="line">    if (schemeField.type == org.apache.thrift.protocol.TType.STOP) &#123;</div><div class="line">      break;</div><div class="line">    &#125;</div><div class="line">    // field标记包含 id + type, switch根据(id+type)来分配相关的值</div><div class="line">    switch (schemeField.id) &#123;</div><div class="line">      case 2: // KEY</div><div class="line">        if (schemeField.type == org.apache.thrift.protocol.TType.STRING) &#123;</div><div class="line">          struct.key = iprot.readString();</div><div class="line">          struct.setKeyIsSet(true);</div><div class="line">        &#125; else &#123;</div><div class="line">          org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);</div><div class="line">        &#125;</div><div class="line">        break;</div><div class="line">      case 1: // VALUE</div><div class="line">        if (schemeField.type == org.apache.thrift.protocol.TType.STRING) &#123;</div><div class="line">          struct.value = iprot.readString();</div><div class="line">          struct.setValueIsSet(true);</div><div class="line">        &#125; else &#123;</div><div class="line">          org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);</div><div class="line">        &#125;</div><div class="line">        break;</div><div class="line">      default:</div><div class="line">        org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);</div><div class="line">    &#125;</div><div class="line">    // 读取Field属性结束标记</div><div class="line">    iprot.readFieldEnd();</div><div class="line">  &#125;</div><div class="line">  　// 读取结构体结束标记</div><div class="line">  iprot.readStructEnd();</div><div class="line">  // check for required fields of primitive type, which can&apos;t be checked in the validate method</div><div class="line">  struct.validate();</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>　　从恢复对象的函数中, 我们也可以对thrift定义的序列化对象有个初步的认识, 庖丁解牛,最终会被细化为readStructBegin, readFieldBegin, read<type>(readString, readI32, readI64), readFieldEnd, readStructEnd的有组织有序调用.</type></p>
+<h2 id="3-数据交换格式分类"><a href="#3-数据交换格式分类" class="headerlink" title="3.数据交换格式分类"></a>3.数据交换格式分类</h2><p>当前的数据交换格式可以分为如下几类:<br>1). 自解析型<br>　　序列化的数据包含完整的结构, 包含了field名称和value值. 比如xml/json/java serizable, 大百度的mcpack/compack, 都属于此类. 即调整不同属性的顺序对序列化/反序列化不影响.<br>2). 半解析型<br>　　序列化的数据,丢弃了部分信息, 比如field名称, 但引入了index(常常是id+type的方式)来对应具体属性和值. 这方面的代表有google protobuf, thrift也属于此类.<br>3). 无解析型<br>　　传说中大百度的infpack实现, 就是借助该种方式来实现, 丢弃了很多有效信息, 性能/压缩比最好, 不过向后兼容需要开发做一定的工作, 详情不知.</p>
+<p>thrift与常见数据交换格式的对比<br>| 交换格式|     类型|     优点| 缺点|<br>|—| — |— |—- |<br>|Xml|     文本|    易读|    臃肿, 不支持二进制数据类型|<br>|Json|    文本|    易读|    丢弃了类型信息, 比如”score”:100, 对score类型是int/double解析有二义性, 不支持二进制数据类型|<br>|Java serizable |    二进制|    使用简单|    臃肿, 只限制在java领域|<br>|Thrift|    |二进制    |高效|    不宜读, 向后兼容有一定的约定限制|<br>|Google Protobuf|    二进制|    高效|    不宜读, 向后兼容有一定的约定限制|</p>
+<h2 id="4-向后兼容实践"><a href="#4-向后兼容实践" class="headerlink" title="4.向后兼容实践"></a>4.向后兼容实践</h2><p>　　Thrift官方文档, 也提到对新增的字段属性, 采用id递增的方式标识并以optional修饰来添加.</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/rpc/" rel="tag"># rpc</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/01/17/Thrift RPC实战(二) Thrift 网络服务模型/" rel="next" title="Thrift RPC实战(二) Thrift 网络服务模型">
+                <i class="fa fa-chevron-left"></i> Thrift RPC实战(二) Thrift 网络服务模型
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/01/19/Thrift RPC实战(四)  thrift连接池的实现/" rel="prev" title="Thrift RPC实战(四)  thrift连接池的实现">
+                Thrift RPC实战(四)  thrift连接池的实现 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div class="ds-thread" data-thread-key="2017/01/18/Thrift RPC实战(三) thrift序列化揭秘/"
+           data-title="Thrift RPC实战(三) thrift序列化揭秘" data-url="http://yoursite.com/2017/01/18/Thrift RPC实战(三) thrift序列化揭秘/">
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="John Doe" />
+          <p class="site-author-name" itemprop="name">John Doe</p>
+          <p class="site-description motion-element" itemprop="description"></p>
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">10</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">分类</span>
+              
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-构造应用场景"><span class="nav-number">1.</span> <span class="nav-text">1.构造应用场景:</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-thrift-数据格式描述"><span class="nav-number">2.</span> <span class="nav-text">2.thrift 数据格式描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-数据交换格式分类"><span class="nav-number">3.</span> <span class="nav-text">3.数据交换格式分类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-向后兼容实践"><span class="nav-number">4.</span> <span class="nav-text">4.向后兼容实践</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">John Doe</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"shunyang"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+
+  
+    
+    
+    <script src="/lib/ua-parser-js/dist/ua-parser.min.js?v=0.7.9"></script>
+    <script src="/js/src/hook-duoshuo.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+</body>
+</html>
